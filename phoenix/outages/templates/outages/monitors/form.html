@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block stylesheets %}
+  <link rel="stylesheet" href="{% static 'outages/outage_form.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
+{% endblock %}
+
+
+{% block content %}
+<div class="mdl-grid">
+  <div class="mdl-cell mdl-cell--12-col">
+    <form action="" method="post" class="mdl-shadow--4dp" id="outage-form">
+        <h5>Update monitor details</h5>
+      {% csrf_token %}
+        {% for field in form %}
+        {% with field.field.widget.input_type as type %}
+          {% if type == 'select' %}
+            <div class="input-field s12">
+              <label>{{ field.label }}</label>
+              {{ field }}
+            </div>
+          {% elif type == 'checkbox' %}
+              <div class="mdl-textfield input-field s12">
+              <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="{{ field.name }}">{{ field.label }}</label>
+                  <input type="{{ type }}" id="{{ field.name }}" name="{{ field.name }}" class="mdl-switch__input"
+                         {% if field.value %} checked {% endif %}>
+              </div>
+          {% elif type == '' %}
+              <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label input-field s12">
+                  <label for="{{ field.name }}">{{ field.label }}</label>
+                  <textarea type="text" id="{{ field.name }}" name="{{ field.name }}" class="mdl-textfield__input">{{ field.value|default:"" }}</textarea>
+              </div>
+          {% else %}
+              <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label input-field s12">
+                <label for="{{ field.name }}">{{ field.label }}</label>
+                <input
+                  class="mdl-textfield__input"
+                  type="{{ type }}"
+                  name="{{ field.name }}"
+                  value="{{ field.value|default:"" }}"
+                  {% if field.field.max_length %}maxlength="{{ field.field.max_length }}"{% endif %}
+                  {% if field.field.min_length %}minlength="{{ field.field.min_length }}"{% endif %}
+                  {% if field.field.required %}required{% endif %}
+                >
+              </div>
+          {% endif %}
+        {% endwith %}
+      {% endfor %}
+      <div>
+        <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent" type="submit">
+            Update monitor
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
+<script>
+  M.FormSelect.init(document.querySelectorAll('select'));
+</script>
+{% endblock %}

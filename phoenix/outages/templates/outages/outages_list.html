@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load outages_extras %}
+{% block content %}
+    <div class="mdl-grid">
+        <div class="mdl-cell mdl-cell--12-col">
+            <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp full-width">
+                <thead>
+                <tr>
+                    <th class="mdl-data-table__cell--non-numeric">Description</th>
+                    <th class="mdl-data-table__cell--non-numeric">System affected</th>
+                    <th class="mdl-data-table__cell--non-numeric">Sales affected</th>
+                    <th class="mdl-data-table__cell--non-numeric">Resolved</th>
+                    <th class="mdl-data-table__cell--non-numeric">Edit</th>
+                    <th class="mdl-data-table__cell--non-numeric">Resolve</th>
+                    <th class="mdl-data-table__cell--non-numeric">Slack</th>
+                    <th class="mdl-data-table__cell--non-numeric">Note</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for outage in object_list %}
+                    <tr>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            <a href="{% url 'outage_detail' pk=outage.pk %}" class="kiwi-link">{{ outage.summary|truncatechars:50 }}</a>
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            {% for system in outage.systems_affected.all %}
+                                <span class="mdl-chip">
+                                    <span class="mdl-chip__text">{{ system.name|truncatechars:30  }}</span>
+                                </span>
+                                <br>
+                            {% endfor %}
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            <span class="mdl-chip">
+                                <span class="mdl-chip__text">{{ outage.sales_affected_choice_human }}</span>
+                            </span>
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            {% if outage.is_resolved %}
+                                <span class="mdl-chip__contact mdl-color-text--green">
+                                    <i class="material-icons icon-resolved">
+                                        done
+                                    </i>
+                                </span>
+                            {% else %}
+                                <span class="mdl-chip__contact mdl-color-text--red">
+                                    <i class="material-icons">
+                                        cancel
+                                    </i>
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            {% if outage|can_user_edit_outage:user_id and not outage.is_resolved %}
+                                <a href="{% url 'outage_update' pk=outage.pk %}"><i class="material-icons">edit</i></a>
+                            {% endif %}
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            {% if outage|can_user_edit_outage:user_id and not outage.is_resolved %}
+                                <a href="{% url 'outage_resolve' pk=outage.pk %}"><i class="material-icons">done_all</i></a>
+                            {% endif %}
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            {% if outage.announcement.permalink %}
+                                <a href="{{ outage.announcement.permalink }}" target="_blank"><i class="material-icons">visibility</i></a>
+                            {% endif %}
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            {% if outage.is_resolved and outage.solution.missing_postmortem %}
+                                <span class="mdl-chip">
+                                    <span class="mdl-chip__text">Missing Postmortem</span>
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if user_id|can_user_create_outage %}
+            <a href="{% url 'outage_create' %}">
+                <button class="corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
+                    <i class="material-icons">add</i>
+                </button>
+            </a>
+        {% endif %}
+    </div>
+{% endblock %}

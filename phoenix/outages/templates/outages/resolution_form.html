@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block stylesheets %}
+  <link rel="stylesheet" href="{% static 'outages/outage_form.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
+{% endblock %}
+
+
+{% block content %}
+<div class="mdl-grid">
+  <div class="mdl-card dl-cell mdl-cell--8-col form-wrapper mdl-shadow--4dp">
+    <form action="" method="post" id="outage-form">
+        <h5>Resolve outage {{ outage.id }}</h5>
+      {% csrf_token %}
+        {% with form.summary as field %}
+            <div class="mdl-textfield mdl-js-textfield input-field s12">
+                <label for="{{ field.name }}">{{ field.label }}</label>
+                <textarea type="text" id="{{ field.name }}" name="{{ field.name }}" class="mdl-textfield__input">{{ field.value|default:"" }}</textarea>
+            </div>
+        {% endwith %}
+        {% with form.suggested_outcome as field %}
+             <div class="input-field s12" id="selected_outcome">
+                <label>{{ field.label }}</label>
+              {{ field }}
+            </div>
+        {% endwith %}
+        {% with form.resolved_at as field %}
+           
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label input-field s12">
+                <label for="{{ field.name }}">{{ field.label }}</label>
+                <input
+                  class="mdl-textfield__input datepicker"
+                  type="text"
+                  name="datepicker"
+                  id="datepicker"
+                  {% if field.field.required %}required{% endif %}
+                >
+            </div>
+        {% endwith %}
+        {# Dominik plz update this according to your needs, thanks :) #}
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label input-field s12">
+                <label for="timepicker">Timepicker</label>
+                <input
+                  class="mdl-textfield__input timepicker"
+                  type="text"
+                  name="timepicker"
+                  id="timepicker"
+                  required
+                >
+            </div>
+        {% with form.report_url as field %}
+            <div class="mdl-textfield mdl-js-textfield input-field s12">
+                <label for="{{ field.name }}">{{ field.label }}</label>
+                <textarea type="text" id="{{ field.name }}" name="{{ field.name }}" class="mdl-textfield__input">{{ field.value|default:"" }}</textarea>
+            </div>
+        {% endwith %}
+
+        <input type="hidden" name="timezone" id="timezone">
+        <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent" type="submit" id="submit">
+          Resolve
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.js"></script>
+<script>
+  // IIFE expression
+  function setDefaults() {
+    var now = moment();
+    var time = now.format('hh:mm A');
+    var date = now.format('MMM DD, YYYY');
+    document.querySelector('#timepicker').value = time;
+    document.querySelector('#datepicker').value = date;
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz == undefined) {
+      tz = 'UTC';
+    }
+    document.querySelector('#timezone').value = tz;
+  };
+
+  (function() {
+    now = new Date()
+    function initDatePicker() {
+      var elems = document.querySelector('#datepicker');
+      var options = {
+        autoClose: true,
+        container: document.body
+      };
+      
+      M.Datepicker.init(elems, options);
+    }
+
+    function initTimePicker() {
+      var elems = document.querySelector('#timepicker');
+      var options = {
+        autoClose: true,
+        // there is a nasty bug
+        // this property accepts string instead of html element
+        container: 'body'
+      };
+      
+      M.Timepicker.init(elems, options);
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      setDefaults();
+      initDatePicker();
+      initTimePicker();
+    });
+
+    M.FormSelect.init(document.querySelectorAll('select'));
+  }());
+
+</script>
+{% endblock %}

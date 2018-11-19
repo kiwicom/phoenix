@@ -1,0 +1,13 @@
+version: '3.4'
+services:
+  app:
+    environment:
+      TEST_DATABASE_URL: 'postgres://postgres:postgres@postgres/postgres'
+      DATA__SLACK_TOKEN: None
+      DATA__SLACK_BOT_TOKEN: None
+      DATA__SLACK_BOT_ID: None
+      DATA__SLACK_ANNOUNCE_CHANNEL_ID: None
+      DATA__SLACK_VERIFICATION_TOKEN: 'testing_token'
+      DATA__SLACK_EMOJI: 'point_up'
+      DATA__SECRET_KEY: 'testing_secret_key'
+    restart: on-failure

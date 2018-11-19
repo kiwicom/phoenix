@@ -1,0 +1,6 @@
+pylint
+pytest-cov
+pytest-django
+python-box
+testing-postgresql
+tox

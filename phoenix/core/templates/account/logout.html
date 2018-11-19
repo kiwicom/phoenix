@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load socialaccount %}
+
+{% block content %}
+<main class="splash">
+  <section class="container">
+    <h1>See ya!</h1>
+    <form method="post" action="{% url 'account_logout' %}">
+      {% csrf_token %}
+      {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+      {% endif %}
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-js-ripple-effect">
+        Leave
+      </button>
+    </form>
+  </section>
+</main>
+{% endblock %}

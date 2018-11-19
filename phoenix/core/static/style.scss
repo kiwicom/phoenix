@@ -1,0 +1,271 @@
+@import url(https://code.getmdl.io/1.3.0/material.cyan-light_blue.min.css);
+
+
+.mdl-grid { max-width: 1200px; }
+.mdl-chip .material-icons { line-height: inherit; }
+.material-icons.md-small { font-size: 18px; }
+.material-icons.md-large { font-size: 36px; }
+
+
+body {
+  font-family: Roboto;
+}
+
+p, label {
+  color: #46515e;
+}
+
+.kiwi-link {
+  color: #00a991;
+  text-decoration: none !important;
+}
+
+p {
+  font-size: 0.8em;
+}
+
+.icon-resolved {
+  color: #46b655;
+}
+
+#outage-form label {
+  position: relative;
+}
+
+header a {
+  text-decoration: none;
+  color: white;
+}
+
+.mdl-chip.md-disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.service-card {
+  width: 100%;
+  min-height: unset;
+}
+
+.corner-fab {
+  position: fixed;
+  right: 40px;
+  bottom: 40px;
+  z-index: 999;
+}
+
+.inner-corner-fab {
+  @extend .corner-fab;
+  right: 110px;
+}
+
+.service-chips a {
+  text-decoration: none;
+}
+
+th.compress, td.compress {
+  width: .01%;
+}
+
+main.splash {
+  background: url('/static/splash.jpg');
+  background-size: cover;
+  height: 100vh;
+  color: white;
+}
+
+main.splash .container {
+  text-align: left;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20vh 1em;
+}
+
+main.splash h1 {
+  font-size: 72px;
+  text-shadow: 2px 2px 4px #444;
+}
+
+main.splash p {
+  font-size: 24px;
+  text-shadow: 1px 1px 2px #444;
+  margin-top: 15px;
+  color: red;
+}
+
+main.splash button {
+  text-align: center;
+}
+
+.issue-title {
+  display: flex;
+  align-items: center;
+}
+
+.issue-title h4 {
+  flex-grow: 1;
+}
+
+.issue-title .buttons {
+  flex-shrink: 0;
+  margin-left: 1em;
+}
+
+.issue-title .buttons form {
+  display: inline-block;
+}
+
+dialog.wontfix {
+  width: 570px;
+}
+
+dialog.wontfix .mdl-textfield {
+  width: 100%;
+}
+
+.yays {
+  position: fixed;
+  top: 100px;
+  left: 36px;
+  display: flex;
+  flex-direction: column;
+}
+
+.yays img {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 18px;
+}
+
+
+// Grid config
+
+#details-wrapper {
+  //font-family: Roboto;
+  font-size: 1.2em;
+  width: 85%;
+  margin: 25px;
+}
+
+#details-wrapper p {
+  font-size: 0.9em;
+}
+
+#details-wrapper a {
+  color: #00a991;
+  text-decoration: none !important;
+}
+
+@media(min-width: 700px) {
+#details-wrapper {
+  display: grid;
+  width: 70%;
+  grid-template-columns: repeat(2, [col] 1fr );
+  grid-template-rows: repeat(4, [row] auto  );
+  grid-template-areas:
+    "header header"
+    "status status"
+    "details-outage details-solution"
+    "footer footer";
+}}
+
+#details-wrapper div {
+  align-items: center;
+}
+
+.page-content h1, h2, h3, h4, h5, h6 {
+  color: #171b1e;
+}
+
+#header {
+  grid-area: header;
+}
+
+#status {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+}
+
+.status-time {
+  font-weight: bold;
+}
+
+.status-time-unresolved {
+  color: #D21C1C;
+}
+
+.status-resolution {
+  border-style: solid;
+  border-width: 5px 20px;
+  border-radius: 5px;
+  color: white;
+  margin-right: 10px;
+  font-weight: bold;
+  //font-size: 1.1em;
+}
+
+.status-resolved, .severity-low {
+  border-color: #46b655;
+  background-color: #46b655;
+}
+
+.severity-medium {
+  border-color: orange;
+  background-color: orange;
+}
+
+.status-unresolved, .severity-high {
+  border-color: #D21C1C;
+  background-color: #D21C1C;
+}
+
+.severity-undefined{
+  border-color: #929292;
+  background-color: #929292;
+}
+
+#details-left {
+  grid-area: details-outage;
+}
+
+#details-right {
+  grid-area: details-solution;
+}
+
+.details-item-name {
+  font-weight: bold;
+}
+
+.details-item {
+  padding-right: 10%;
+}
+
+#footer {
+  grid-area: footer;
+}
+
+#footer-title {
+  font-weight: bold;
+}
+
+#footer .notification {
+  display: flex;
+}
+
+.notification-created-by {
+  color: #00a991;
+}
+
+#footer .notification-text {
+  font-style: italic;
+  flex-basis: 80%;
+}
+
+#footer .notification-datetime {
+  margin-left: auto;
+}

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load outages_extras %}
+{% block content %}
+<div id="details-wrapper">
+    <div id="header"><h4>{{ object.summary }}</h4></div>
+    <div id="status">
+        {% if object.is_resolved %}
+            <p class="status-resolution status-resolved">RESOLVED</p>
+            <p>
+                Resolved in: <span class="status-time">{{ object.solution.real_downtime  }} minutes</span>
+            </p>
+        {% else %}
+            <p class="status-resolution status-unresolved">UNRESOLVED</p>
+            <p>
+                Time until deadline: 
+                <span class="status-time status-time-unresolved">
+                    {% if object.eta_is_unknown %}
+                        N/A
+                    {% else %}
+                        {{ object.eta_remaining }}
+                    {% endif %}
+                    minutes
+                </span>
+            </p>
+        {% endif %}
+    </div>
+
+    <div id="details-left">
+        <div class="details-item">
+            <label class="details-item-name">ETA</label>
+            <p class="details-item-value timestamp-transform">{{ object.eta_deadline }}</p>
+        </div>
+        <div class="details-item">
+                <label class="details-item-name">Started at</label>
+                <p class="details-item-value timestamp-transform">{{ object.started_at.timestamp }}</p>
+        </div>
+        {% if object.systems_affected.all %}
+            <div class="details-item">
+                <label class="details-item-name">Systems affected</label>
+                <p class="details-item-value">
+                    {% for system in object.systems_affected.all %}
+                        {{ system.name }}
+                    {% endfor %}
+                </p>
+            </div>
+        {% endif %}
+        <div class="details-item">
+            <label class="details-item-name">Sales affected</label>
+            <p class="details-item-value">{{ object.sales_affected_choice_human }}</p>
+        </div>
+        {% if object.sales_affected %}
+            <div class="details-item">
+                    <label class="details-item-name">Sales affected description</label>
+                    <p class="details-item-value">{{ object.sales_affected }}</p>
+            </div>
+        {% endif %}
+        <div class="details-item">
+                <label class="details-item-name">Reported by</label>
+                <p class="details-item-value">
+                        <a href="{{ object.created_by.profile.slack_link }}" target="_blank">{{ object.created_by.email|default:object.created_by.username }}</a>
+                </p>
+        </div>
+    </div>
+
+    <div id="details-right">
+        {% if object.is_resolved %}
+            <div class="details-item">
+                    <label class="details-item-name">Summary</label>
+                    <p class="details-item-value">{{ object.solution.summary }}</p>
+            </div>
+            <div class="details-item">
+                    <label class="details-item-name">Resolved at</label>
+                    <p class="details-item-value timestamp-transform">{{ object.solution.resolved_at_timestamp }}</p>
+            </div>
+            <div class="details-item">
+                    <label class="details-item-name">Duration</label>
+                    <p class="details-item-value">
+                        <span class="timestamp-transform">{{ object.started_at.timestamp }}</span> - <span class="timestamp-transform">{{ object.solution.resolved_at.timestamp }}</span>
+                    </p>
+            </div>
+            <div class="details-item">
+                    <label class="details-item-name">Resolved by</label>
+                    <p class="details-item-value">
+                            <a href="{{ object.solution.created_by.profile.slack_link }}" target="_blank">{{ object.solution.created_by.email|default:object.solution.created_by.username }}</a>
+                    </p>
+            </div>
+            <div class="details-item">
+                    <label class="details-item-name">Suggested outcome</label>
+                    <p class="details-item-value">{{ object.solution.suggested_outcome_human }}</p>
+            </div>
+        {% endif %}
+        <div class="details-item">
+                <label class="details-item-name">Comunication assignee</label>
+                <p class="details-item-value">
+                    <a href="{{ object.solution_assignee.profile.slack_link }}" target="_blank">{{ object.solution_assignee.email|default:object.solution_assignee.username }}</a>
+                </p>
+        </div>
+        <div class="details-item">
+                <label class="details-item-name">Solution assignee</label>
+                <p class="details-item-value">
+                    <a href="{{ object.communication_assignee.profile.slack_link }}" target="_blank">{{ object.communication_assignee.email|default:object.communication_assignee.username }}</a>
+                </p>
+        </div>
+
+        {% if object.is_resolved %}
+            {% if object.solution.report_url %}
+                <div class="details-item">
+                    <label class="details-item-name">Postmortem</label>
+                    <p class="details-item-value">
+                            <a href="{{ object.solution.report_url }}" target="_blank" rel="external">{{ object.solution.report_url|truncatechars:25 }}</a>
+                    </p>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+
+    <div id="footer">
+        <hr>
+        <h6 id="footer-title">Update History</h6>
+
+        {% for notification in object.notifications.all %}
+            <div class="notification">
+                <p class="notification-text">{{ notification.text }}
+                {% if notification.created_by %}
+                    <span class="notification-created-by">by {{ notification.created_by.email }}</span>
+                {% endif %}
+            </p>
+                <p class="notification-datetime timestamp-transform">{{ notification.created.timestamp }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if user_can_modify %}
+            {% if not object.is_resolved %}
+                <a href="{% url 'outage_resolve' pk=object.pk %}">
+                    <button class="inner-corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
+                        <i class="material-icons">done_outline</i>
+                    </button>
+                </a>            
+                <a href="{% url 'outage_update' pk=object.pk %}">
+                    <button class="corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
+                        <i class="material-icons">mode_edit</i>
+                    </button>
+                </a>
+            {% else %}
+                <a href="{% url 'outage_solution_update' pk=object.pk %}">
+                    <button class="corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
+                        <i class="material-icons">mode_edit</i>
+                    </button>
+                </a>
+            {% endif %}
+        {% endif %}
+{% endblock %}
+
+
+{% block scripts %}
+    <script>
+        $(document).ready(function () {
+            transform_timestamps("timestamp-transform");
+        });
+    </script>
+{% endblock %}

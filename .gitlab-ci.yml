@@ -1,0 +1,31 @@
+stages:
+ - build
+ - test
+ - release
+
+variables:
+ GIT_DEPTH: "3"
+ PYLINT_TARGET: phoenix
+
+include:
+ - 'https://ci-files.skypicker.com/templates/build/docker_build.yml'
+ - 'https://ci-files.skypicker.com/templates/build/zoo.yml'
+ - 'https://ci-files.skypicker.com/templates/build/coala.yml'
+ - 'https://ci-files.skypicker.com/templates/test/pylint.yml'
+ - 'https://ci-files.skypicker.com/templates/release/release_latest.yml'
+
+pytest:
+ stage: test
+ variables:
+  GIT_STRATEGY: none
+ services:
+  - postgres:10.0
+  - redis:latest
+ script:
+  - 'https://ci-files.skypicker.com/templates/build/docker_build.yml'
+  - >
+    docker run
+    -e TEST_DATABASE_URL=postgres://postgres:postgres@$POSTGRES_PORT_5432_TCP_ADDR:5432/postgres
+    -e REDIS_URL=redis://$REDIS_PORT_6379_TCP_ADDR:6379/0
+    $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    pytest -v --cov phoenix

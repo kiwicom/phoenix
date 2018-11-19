@@ -1,0 +1,90 @@
+@mixin display-flex {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+}
+
+@mixin flex-horizontal {
+  @include display-flex;
+  flex-direction: row;
+}
+
+@mixin flex-vertical {
+  @include display-flex;
+  flex-direction: column;
+}
+
+.mdl-layout__content {
+  z-index: 4;
+  height: 100%;
+}
+
+// Enforcing this because I'm mixing Materialize with MDLite
+nav {
+  background-color: rgb(0, 188, 212) !important;
+  box-shadow: none !important;
+  width: auto !important;
+}
+
+.form-wrapper {
+  margin: 0 auto;
+  padding-bottom: 17px;
+  margin-top: 25px;
+}
+
+form {
+  @include flex-vertical;
+  justify-content: flex-start;
+  background: #fff;
+  width: 100%;
+
+  .repo-input-container {
+    display: inline-block;
+    width: 90%;
+
+    .mdl-textfield {
+      width: 100%;
+    }
+
+    .repo-input-suggestions-container {
+      display: block;
+      opacity: 1;
+      width: 100%;
+      min-height: 50px;
+      top: 64px;
+      max-height: 250px;
+      overflow-y: auto;
+
+      li.selected {
+        background: #eee;
+      }
+    }
+  }
+
+  .mdl-textfield,
+  .input-field {
+    width: 90%;
+
+    input[type="text"].mdl-textfield__input:focus {
+      border-bottom: 1px solid #795548;
+      box-shadow: 0 1px 0 0 #795548;
+
+      & + label {
+        color: #795548;
+      }
+    }
+  }
+
+  .dropdown-content li > a,
+  .dropdown-content li > span {
+    color: #795548;
+  }
+
+  .input-field label,
+  .input-field .select-wrapper + label {
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.26);
+    left: 0;
+  }
+}

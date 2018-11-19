@@ -1,0 +1,22 @@
+{% extends 'skeleton.html' %}
+{% load socialaccount %}
+
+{% block body %}
+<main class="splash">
+  <section class="container">
+    <h1>Welcome to<br>The Phoenix!</h1>
+    <a href="{% provider_login_url 'google' %}">
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-js-ripple-effect">
+        Enter <small>(with Google)</small>
+      </button>
+    </a>
+    {% if messages %}
+      {% for message in messages %}
+        {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+          <p class="error">ERROR: {{ message }}</p>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

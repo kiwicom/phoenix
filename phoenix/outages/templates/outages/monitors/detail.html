@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div id="details-wrapper">
+        <div id="header"><h4>{{ object.name }}</h4></div>
+        <div id="status" title="Severity"><p class="status-resolution severity-{{ object.get_severity_display }}">{{ object.get_severity_display|upper }}</p></div>
+        <div id="details-left">
+            <div class="details-item">
+                    <label class="details-item-name">Description</label>
+                    <p class="details-item-value">{{ object.description }}</p>
+            </div>
+            <div class="details-item">
+                    <label class="details-item-name">System</label>
+                    <p class="details-item-value">{{ object.get_monitoring_system_display|default:'unknown' }}</p>
+            </div>
+            <div class="details-item">
+                    <label class="details-item-name">Alerts</label>
+                    <p class="details-item-value">{{ object.occurrence_count }}</p>
+            </div>
+        </div>
+
+        <div id="details-right">
+            <div class="details-item">
+                    <label class="details-item-name">Created by</label>
+                    <p class="details-item-value"><span class="notification-created-by">{{ object.created_by|default:'Unknown' }}</span></p>
+            </div>
+            <div class="details-item">
+                    <label class="details-item-name">Last modified by</label>
+                    <p class="details-item-value">
+                        <span class="notification-created-by">{{ object.last_modification.0.email|default:'Unknown' }}</span>
+                        at <span class="timestamp-transform">{{ object.last_modification.1.timestamp }}</span>
+                    </p>
+            </div>
+        </div>
+
+        <a href="{% url 'monitor_update' pk=object.pk %}">
+            <button class="corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
+                <i class="material-icons">mode_edit</i>
+            </button>
+        </a>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        $(document).ready(function () {
+            transform_timestamps("timestamp-transform");
+        });
+    </script>
+{% endblock %}

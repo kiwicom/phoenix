@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="mdl-grid">
+        <div class="mdl-cell mdl-cell--12-col">
+            <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp full-width">
+                <thead>
+                <tr>
+                    <th class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">Name</th>
+                    <th class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">System</th>
+                    <th class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">Created by</th>
+                    <th class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">Severity</th>
+                    <th class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">Edit</th>
+                    <th class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">Link</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for monitor in object_list %}
+                    <tr>
+                        <td class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">
+                            <a href="{% url 'monitor_detail' pk=monitor.pk %}" class="kiwi-link">{{ monitor.name|default:monitor.external_id }}</a>
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">
+                            {{ monitor.get_monitoring_system_display}}
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">
+                            {{ monitor.created_by }}
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">
+                            {{ monitor.get_severity_display|upper }}
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">
+                            <a href="{% url 'monitor_update' pk=monitor.pk %}"><i class="material-icons">edit</i></a>
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric mdl-layout--large-screen-only">
+                            {% if monitor.link %}
+                                <a href="{{ monitor.link }}" target="_blank"><i class="material-icons">visibility</i></a>
+                            {% else %}
+                                {{ monitor.external_id }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

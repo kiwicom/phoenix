@@ -1,0 +1,120 @@
+version: '3.4'
+services:
+  app:
+    build:
+      context: .
+      args:
+        pypi_username: ${PYPI_USERNAME}
+        pypi_password: ${PYPI_PASSWD}
+    environment:
+      - DB_HOST
+      - DB_NAME
+      - DB_USER
+      - DB_PASSWORD
+      - DB_PORT
+      - SLACK_TOKEN
+      - SLACK_BOT_TOKEN
+      - SLACK_BOT_ID
+      - SLACK_ANNOUNCE_CHANNEL_ID
+      - SLACK_VERIFICATION_TOKEN
+      - SLACK_EMOJI
+      - SECRET_KEY
+      - DEBUG
+      - DATADOG_API_KEY
+      - DATADOG_APP_KEY
+      - GOOGLE_SERVICE_ACCOUNT
+      - SENTRY_DSN
+      - GITLAB_PRIVATE_TOKEN
+      - REDIS_URL
+      - REDIS_PORT
+      - NOTIFY_BEFORE_ETA
+      - GITLAB_POSTMORTEM_DAYS_TO_NOTIFY
+      - ALLOWED_EMAIL_DOMAIN
+      - DEVEL_GOOGLE_OAUTH_CLIENT_ID
+      - DEVEL_GOOGLE_OAUTH_SECRET
+      - GOOGLE_ACC
+
+    tty: true
+    command:
+      - python
+      - manage.py
+      - runserver
+      - 0.0.0.0:8000
+    volumes:
+      - ./phoenix:/app/phoenix
+    ports:
+      - '0.0.0.0:8000:8000'
+    depends_on:
+      - postgres
+      - redis
+      - worker
+
+  postgres:
+    image: postgres:10.1-alpine
+    ports:
+      - '0.0.0.0:5432:5432'
+
+  redis:
+    image: redis:4.0-alpine
+    ports:
+      - '6379'
+
+  worker:
+    build:
+      context: .
+      args:
+        pypi_username: ${PYPI_USERNAME}
+        pypi_password: ${PYPI_PASSWD}
+    command:
+      - celery
+      - worker
+      - -A
+      - phoenix
+      - --loglevel=DEBUG
+    volumes:
+      - ./phoenix:/app/phoenix
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST
+      - DB_NAME
+      - DB_USER
+      - DB_PASSWORD
+      - DB_PORT
+      - SLACK_TOKEN
+      - SLACK_BOT_TOKEN
+      - SLACK_BOT_ID
+      - SLACK_ANNOUNCE_CHANNEL_ID
+      - SLACK_VERIFICATION_TOKEN
+      - SLACK_EMOJI
+      - SECRET_KEY=unused
+      - DEBUG
+      - DATADOG_API_KEY
+      - DATADOG_APP_KEY
+      - GOOGLE_SERVICE_ACCOUNT
+      - SENTRY_DSN
+      - GITLAB_PRIVATE_TOKEN
+      - REDIS_URL
+      - REDIS_PORT
+      - NOTIFY_BEFORE_ETA
+      - GITLAB_POSTMORTEM_DAYS_TO_NOTIFY
+      - ALLOWED_EMAIL_DOMAIN
+      - DEVEL_GOOGLE_OAUTH_CLIENT_ID
+      - DEVEL_GOOGLE_OAUTH_SECRET
+      - GOOGLE_ACC
+
+  scheduler:
+    build:
+      context: .
+      args:
+        pypi_username: ${PYPI_USERNAME}
+        pypi_password: ${PYPI_PASSWD}
+    command: [celery, beat, -A, phoenix, -s, /tmp/celerybeat-schedule/celerybeat-schedule, --pidfile, '']
+    environment:
+      - DATA__DEBUG
+      - DATA__SECRET_KEY=unused
+    volumes:
+      - /tmp/celerybeat-schedule
+    depends_on:
+      - redis
