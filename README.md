@@ -2,6 +2,11 @@
 
 A system for managing outage announcements on Slack.
 
+[![Python: 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://python.org)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-black.svg)](https://github.com/ambv/black)
+[![Discord](https://img.shields.io/discord/427417507276783616.svg)](https://discord.gg/2FXqeha)
+[![Gitlab pipeline status (branch)](https://img.shields.io/gitlab/pipeline/kiwicom/phoenix/master.svg)](https://gitlab.com/kiwicom/phoenix/pipelines)
+
 ## Example announcement
 ![phoenix example announcement](example_announcement.png)
 
