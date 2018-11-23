@@ -298,6 +298,7 @@ def announce(request):
                                       'name': 'sales_affected',
                                       'hint': '''Please fill in number of lost bookings and financial impact on
                                                   turnover''',
+                                      'optional': True,
                                   },
                                   {
                                       'label': 'Primary affected system',
@@ -395,6 +396,7 @@ class InteractiveMesssageHandler():
                     'name': 'sales_affected',
                     'value': self.outage.sales_affected,
                     'hint': 'Please fill in number of lost bookings and financial impact on turnover',
+                    'optional': True,
                 },
                 {
                     'label': 'More info',
