@@ -1,31 +1,61 @@
 stages:
- - build
- - test
- - release
+  - build
+  - test
+  - release
 
 variables:
- GIT_DEPTH: "3"
- PYLINT_TARGET: phoenix
+  GIT_DEPTH: "3"
+  PYLINT_TARGET: phoenix
+  IMAGE_LABELS: >
+    --label vcs-url=$CI_PROJECT_URL
+    --label com.skypicker.gitlab.ci.builder=$GITLAB_USER_EMAIL
+    --label com.skypicker.gitlab.ci.pipeline=$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID
+    --label com.skypicker.gitlab.ci.ref=$CI_BUILD_REF_NAME
+    --label com.skypicker.gitlab.ci.build=$CI_PROJECT_URL/builds/$CI_BUILD_ID
+
+image: docker:18.06
+services:
+  - docker:dind
+
+before_script:
+  - export CI_BUILD_REF_SLUG=${CI_BUILD_REF_NAME/\//-}
+  - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY || true
 
 include:
- - 'https://ci-files.skypicker.com/templates/build/docker_build.yml'
- - 'https://ci-files.skypicker.com/templates/build/zoo.yml'
- - 'https://ci-files.skypicker.com/templates/build/coala.yml'
- - 'https://ci-files.skypicker.com/templates/test/pylint.yml'
- - 'https://ci-files.skypicker.com/templates/release/release_latest.yml'
+  - 'https://ci-files.skypicker.com/templates/build/coala.yml'
+  - 'https://ci-files.skypicker.com/templates/test/pylint.yml'
+  - 'https://ci-files.skypicker.com/templates/release/release_latest.yml'
+
+docker_build:
+  stage: build
+  dependencies: []
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG || true
+    - docker pull $CI_REGISTRY_IMAGE:master || true
+    - >
+      docker build .
+      --cache-from $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+      --cache-from $CI_REGISTRY_IMAGE:master
+      --build-arg package_version=git-$CI_COMMIT_SHA
+      --label build-date=`date -Iseconds`
+      $IMAGE_LABELS
+      --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+      --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
 pytest:
- stage: test
- variables:
-  GIT_STRATEGY: none
- services:
-  - postgres:10.0
-  - redis:latest
- script:
-  - 'https://ci-files.skypicker.com/templates/build/docker_build.yml'
-  - >
-    docker run
-    -e TEST_DATABASE_URL=postgres://postgres:postgres@$POSTGRES_PORT_5432_TCP_ADDR:5432/postgres
-    -e REDIS_URL=redis://$REDIS_PORT_6379_TCP_ADDR:6379/0
-    $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    pytest -v --cov phoenix
+  stage: test
+  variables:
+    GIT_STRATEGY: none
+  services:
+    - postgres:10.0
+    - redis:latest
+    - docker:dind
+  script:
+    - >
+      docker run
+      -e TEST_DATABASE_URL=postgres://postgres:postgres@$POSTGRES_PORT_5432_TCP_ADDR:5432/postgres
+      -e REDIS_URL=redis://$REDIS_PORT_6379_TCP_ADDR:6379/0
+      $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+      pytest -v --cov phoenix
