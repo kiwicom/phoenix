@@ -33,6 +33,7 @@ services:
       - DEVEL_GOOGLE_OAUTH_CLIENT_ID
       - DEVEL_GOOGLE_OAUTH_SECRET
       - GOOGLE_ACC
+      - SLACK_NOTIFY_SALES_CHANNEL_ID
 
     tty: true
     command:
@@ -103,6 +104,7 @@ services:
       - DEVEL_GOOGLE_OAUTH_CLIENT_ID
       - DEVEL_GOOGLE_OAUTH_SECRET
       - GOOGLE_ACC
+      - SLACK_NOTIFY_SALES_CHANNEL_ID
 
   scheduler:
     build:

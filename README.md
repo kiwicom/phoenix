@@ -130,6 +130,7 @@ Phoenix is able to retrieve configuration/secrets from environment variables. Th
 - `SLACK_BOT_TOKEN` — Bot User OAuth Access Token 
 - `SLACK_VERIFICATION_TOKEN` — used to verify whether Phoenix API endpoints are called by Slack
 - `SLACK_EMOJI` — emoji name, e.g. `point_up`, If you add a reaction with this emoji to a comment in an outage-dedicated channel, it will be shared in the thread under the main outage announcement. Default: `point_up`
+- `SLACK_NOTIFY_SALES_CHANNEL_ID` — sets `channel ID` for notification about announcement of outage which affects sales. (optional)
 - `SECRET_KEY` — secret key for Django application
 - `DEBUG` - switches to debug mode. Default: False
 - `DATADOG_API_KEY` — [see Monitoring](#monitoring-optional)

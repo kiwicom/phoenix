@@ -66,6 +66,10 @@ class AbstractOutage(models.Model):
         abstract = True
 
     @property
+    def sales_has_been_affected(self):
+        return self.sales_affected_choice == self.YES
+
+    @property
     def sales_affected_choice_human(self):
         return [s[1] for s in self.SALES_AFFECTED_CHOICES if s[0] == self.sales_affected_choice][0]
 

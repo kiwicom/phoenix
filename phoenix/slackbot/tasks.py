@@ -332,6 +332,7 @@ def create_or_update_announcement(outage_pk, check_history=False, resolved=False
                 announcement.message_ts = resp['ts']
                 get_outage_slack_permalink(announcement, channel_id, announcement.message_ts)
                 announcement.save()
+            notify_sales_about_creation(announcement)
 
         if create_new:
             notify_assigned(outage.solution_assignee.last_name, announcement.permalink)
@@ -609,3 +610,23 @@ def notify_users_with_due_date_postmortems():
 @shared_task(time_limit=5)
 def test_task():
     return "Pong"
+
+
+def notify_sales_about_creation(announcement):
+    if (not all((announcement.outage.sales_has_been_affected, settings.SLACK_NOTIFY_SALES_CHANNEL_ID))
+            or announcement.sales_notified):
+        return
+    announcement_url = announcement.permalink
+    msg = "New outage affecting sales has been announced"
+    if announcement_url:
+        msg += f": {announcement_url}"
+    data = slack_client.api_call(
+        "chat.postMessage",
+        channel=settings.SLACK_NOTIFY_SALES_CHANNEL_ID,
+        text=msg,
+    )
+    if not data['ok']:
+        logger.error(f"Outage creation notification failed: {data['error']}")
+        return
+    announcement.sales_notified = True
+    announcement.save()
