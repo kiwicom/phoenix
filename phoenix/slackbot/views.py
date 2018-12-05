@@ -637,7 +637,6 @@ class DialogSubmissionHandler():
 
     def __init__(self, request, payload):
         self.request = request
-        self.payload = payload
         self.callback_id = payload.get('callback_id')
         m = callback_pattern.match(self.callback_id)
         if m is not None:
@@ -646,15 +645,31 @@ class DialogSubmissionHandler():
 
         self.dialog_data = payload.get('submission')
         self.actor = provision_slack_user(payload['user']['id'])
+        self.errors = []
 
     def handle(self):
         handler = getattr(self, self.action, None)
         if handler:
-            return handler()
+            data = handler()
+            if self.errors:
+                return Response(data={"errors": self.errors}, status=status.HTTP_200_OK)
+            if data:
+                return data
 
     def edit(self):
+        eta = self.dialog_data.get('eta')
+        if eta:
+            try:
+                int(eta)
+            except ValueError:
+                self.errors.append({
+                    "name": "eta",
+                    "error": "Invalid format. Specify ETA in minutes (for example: 30)."
+                })
+                return
+
         outage = Outage.objects.get(id=self.obj)
-        outage.set_eta(self.dialog_data.get('eta'))
+        outage.set_eta(eta)
         change_desc = self.dialog_data.get('more_info', 0)
         outage.sales_affected_choice = self.dialog_data.get('sales_affected_choice')
         outage.sales_affected = self.dialog_data.get('sales_affected')
@@ -667,10 +682,21 @@ class DialogSubmissionHandler():
         outage.save(modified_by=self.actor)
 
     def new(self):
+        eta = self.dialog_data.get('eta')
+        if eta:
+            try:
+                int(eta)
+            except ValueError:
+                self.errors.append({
+                    "name": "eta",
+                    "error": "Invalid format. Specify ETA in minutes (for example: 30)."
+                })
+                return
+
         outage = Outage(summary=self.dialog_data.get('summary'), created_by=self.request.user,
                         sales_affected_choice=self.dialog_data.get('sales_affected_choice'),
                         sales_affected=self.dialog_data.get('sales_affected'))
-        outage.set_eta(self.dialog_data.get('eta'))
+        outage.set_eta(eta)
         outage.save()
         added_system = self.dialog_data.get('affected_system')
         outage.add_affected_system(added_system)
@@ -682,16 +708,12 @@ class DialogSubmissionHandler():
             # TODO: fix midnight
             resolved_at = arrow.get(self.dialog_data.get('real_downtime'), 'YYYY-MM-DD HH:mm')
             resolved_at = resolved_at_to_utc(resolved_at, user_tz)
-        except ValueError:
-            data = {
-                'errors': [
-                    {
-                        'name': 'real_downtime',
-                        'error': 'Invalid format.',
-                    }
-                ]
-            }
-            return Response(data=data, status=status.HTTP_200_OK)
+        except (ValueError, arrow.parser.ParserError):
+            self.errors.append({
+                'name': 'real_downtime',
+                'error': 'Invalid format.',
+            })
+            return
         solution = outage.solution
         solution.resolved_at = resolved_at
         solution.summary = self.dialog_data.get('summary')
@@ -724,18 +746,21 @@ class DialogSubmissionHandler():
             # TODO: fix midnight
             resolved_at = arrow.get(self.dialog_data.get('resolved_at'), 'YYYY-MM-DD HH:mm')
             resolved_at = resolved_at_to_utc(resolved_at, user_tz)
+        except (ValueError, arrow.parser.ParserError):
+            self.errors.append({
+                'name': 'resolved_at',
+                'error': 'Invalid format.',
+            })
+        try:
             started_at = arrow.get(self.dialog_data.get('started_at'), 'YYYY-MM-DD HH:mm')
             started_at = resolved_at_to_utc(started_at, user_tz)
-        except ValueError:
-            data = {
-                'errors': [
-                    {
-                        'name': 'real_downtime',
-                        'error': 'Invalid format.',
-                    }
-                ]
-            }
-            return Response(data=data, status=status.HTTP_200_OK)
+        except (ValueError, arrow.parser.ParserError):
+            self.errors.append({
+                'name': 'started_at',
+                'error': 'Invalid format.',
+            })
+        if self.errors:
+            return
 
         solution.resolved_at = resolved_at
         outage.started_at = started_at
@@ -792,4 +817,4 @@ class DialogSubmissionHandler():
 
 def handle_dialog_submission(request, payload):  # Ignore RadonBear
     submission_handler = DialogSubmissionHandler(request, payload)
-    submission_handler.handle()
+    return submission_handler.handle()
