@@ -8,7 +8,8 @@ def get_outage(with_solution=False):
                                            password='unittest')
     outage = Outage(summary='unittest outage', created_by=user,
                     communication_assignee=user,
-                    solution_assignee=user)
+                    solution_assignee=user, sales_affected_choice="Y",
+                    sales_affected="test")
     outage.save()
     if with_solution:
         solution = Solution(outage=outage, created_by=user)

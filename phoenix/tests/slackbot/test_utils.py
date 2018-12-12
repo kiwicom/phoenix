@@ -10,6 +10,7 @@ from rest_framework.response import Response
 import box
 
 from phoenix.slackbot import utils
+from phoenix.slackbot.message import generate_slack_message
 from phoenix.slackbot.models import Announcement
 from phoenix.tests.utils import get_outage
 
@@ -32,33 +33,32 @@ def test_retrieve_user():
 
 
 @pytest.mark.django_db
-def test_create_or_update_announcement():
+def test_generate_slack_message():
     outage = get_outage()
     announcement = Announcement(outage=outage, channel_id='unittest')
 
-    attachment = utils.create_attachment(outage, announcement)
-    assert len(attachment[1]['actions']) == 3
-    assert attachment[0]['title'] == 'unittest outage'
+    attachment = generate_slack_message(outage, announcement)[0]
+    assert len(attachment['actions']) == 5
+    assert attachment['title'] == 'N/A incident'
 
 
 @pytest.mark.django_db
-def test_create_or_update_announcement_resolved():
+def test_generate_slack_message_resolved():
     outage = get_outage(with_solution=True)
     announcement = Announcement(outage=outage, channel_id='unittest')
 
-    attachment = utils.create_attachment(outage, announcement)[0]
+    attachment = generate_slack_message(outage, announcement)[0]
     assert attachment['color'] == 'good'
-    assert not attachment.get('actions')
 
 
 @pytest.mark.django_db
-def test_create_or_update_announcement_dedicated_channel_id():
+def test_generate_slack_message_dedicated_channel_id():
     outage = get_outage()
     announcement = Announcement(outage=outage, channel_id='unittest',
                                 dedicated_channel_id='unittest-dedicated')
 
-    attachment = utils.create_attachment(outage, announcement)
-    action_names = [action['name'] for action in attachment[1]['actions']]
+    attachment = generate_slack_message(outage, announcement)[0]
+    action_names = [action['name'] for action in attachment['actions']]
     assert 'createchannel' not in action_names
 
 

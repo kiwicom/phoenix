@@ -15,10 +15,8 @@ from ..integration.google import get_directory_api
 from ..integration.models import GoogleGroup
 from ..outages.utils import format_datetime as format_outage_datetime
 from .bot import slack_bot_client, slack_client
-from .utils import (
-    create_attachment, format_datetime, format_user_for_slack, join_channels, retrieve_user,
-    transfrom_slack_email_domain
-)
+from .message import generate_slack_message
+from .utils import format_datetime, format_user_for_slack, join_channels, retrieve_user, transfrom_slack_email_domain
 
 logger = logging.getLogger(__name__)
 
@@ -320,7 +318,7 @@ def create_or_update_announcement(outage_pk, check_history=False, resolved=False
             method = 'chat.postMessage' if create_new else 'chat.update'
             solution = outage.is_resolved
 
-            attachments = create_attachment(outage, announcement)
+            attachments = generate_slack_message(outage, announcement)
 
             resp = slack_client.api_call(
                 method,

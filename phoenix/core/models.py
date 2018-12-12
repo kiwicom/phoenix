@@ -74,6 +74,10 @@ class AbstractOutage(models.Model):
         return [s[1] for s in self.SALES_AFFECTED_CHOICES if s[0] == self.sales_affected_choice][0]
 
     @property
+    def systems_affected_human(self):
+        return ', '.join([sys.name for sys in self.systems_affected.all()]) or 'N/A'
+
+    @property
     def real_eta(self):
         """Get properly represented ETA.
 
