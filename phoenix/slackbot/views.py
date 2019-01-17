@@ -399,10 +399,10 @@ class InteractiveMesssageHandler():
                     'optional': True,
                 },
                 {
-                    'label': 'More info',
+                    'label': 'Reason for this change?',
                     'name': 'more_info',
                     'type': 'textarea',
-                    'hint': 'State the reason for outage change.',
+                    'hint': 'State the reason for the change.',
                 },
             ]
         }
