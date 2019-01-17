@@ -759,6 +759,17 @@ class DialogSubmissionHandler():
                 'name': 'started_at',
                 'error': 'Invalid format.',
             })
+        if started_at > resolved_at:
+            self.errors += [
+                {
+                    'name': 'started_at',
+                    'error': "Outage can't be resolved before it started. Please fix the Start and Resolve times.",
+                },
+                {
+                    'name': 'resolved_at',
+                    'error': "Outage can't be resolved before it started. Please fix the Start and Resolve times.",
+                },
+            ]
         if self.errors:
             return
 
