@@ -1,6 +1,4 @@
 import logging
-import random
-import string
 
 from django.db import models
 
@@ -38,19 +36,14 @@ class Announcement(models.Model):
     def dedicated_channel_name(self):
         date = self.outage.created.date().strftime('%y%m%d')
         systems = ','.join([system.name for system in self.outage.systems_affected.all()])[:9]
-        #offset = Outage.objects.filter(  # Ignore PEP8Bear
-            #created__day=self.outage.created.date().day,  # Ignore PyCommentedCodeBear
-            #pk__lt=self.outage.pk,
-            #systems_affected__in=self.outage.systems_affected.all(),
-        #).count()
+        offset = Outage.objects.filter(
+            created__day=self.outage.created.date().day,
+            pk__lt=self.outage.pk,
+            systems_affected__in=self.outage.systems_affected.all(),
+        ).count()
         msg = f'o-{systems}-{date}'
-        # if offset > 1:  # Ignore PyCommentedCodeBear
-        #    return msg + f'-{offset}'
-        # tmp - start
-        letters = string.ascii_lowercase
-        tmp_offset = ''.join(random.choice(letters) for i in range(5))
-        msg += f"-{tmp_offset}"
-        # tmp - end
+        if offset:
+            return msg + f'-{offset+1}'
         return msg
 
     def create_channel(self):
