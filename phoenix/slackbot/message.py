@@ -87,6 +87,7 @@ class BaseMessage:
     def __init__(self, outage, announcement):
         self.outage = outage
         self.announcement = announcement
+        self.title = f'{self.outage.systems_affected_human} incident'
 
     def generate_message(self):
         attachment = self.generate_base()
@@ -126,7 +127,7 @@ class SolutionMessage(BaseMessage):
     def __init__(self, outage, announcement):
         super().__init__(outage, announcement)
         self.solution = outage.is_resolved
-        self.title = f'Resolved {self.outage.systems_affected_human} incident'  # TODO: add start time
+        self.title = 'Resolved ' + self.title
         self.color = 'good'
 
     def get_formatted_resolution(self):
@@ -142,11 +143,13 @@ class SolutionMessage(BaseMessage):
         return resolution
 
     def get_formatted_duration(self):
-        downtime = self.solution.real_downtime
-        hours, minutes = divmod(downtime, 60)
+        days, hours, minutes, _ = self.solution.duration()
+        duration = f"{minutes}m"
         if hours:
-            return f"{hours}h {minutes}m"
-        return f"{minutes}m"
+            duration = f"{hours}h " + duration
+        if days:
+            duration = f"{days}d " + duration
+        return duration
 
     def add_fields(self, attachment):
         attachment['fields'] = [
@@ -187,7 +190,6 @@ class SolutionMessage(BaseMessage):
 class OutageMessage(BaseMessage):
     def __init__(self, outage, announcement):
         super().__init__(outage, announcement)
-        self.title = f'{self.outage.systems_affected_human} incident'
         self.color = 'danger'
 
     def add_fields(self, attachment):
