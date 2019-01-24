@@ -307,8 +307,7 @@ class AbstractSolution(models.Model):
 class Solution(AbstractSolution):
     outage = models.OneToOneField(Outage, on_delete=models.CASCADE)
 
-    @property
-    def real_downtime(self):
+    def downtime(self):
         start = arrow.get(self.outage.started_at)
         end = arrow.get(self.resolved_at)
         if start > end:
@@ -316,8 +315,21 @@ class Solution(AbstractSolution):
             # at the same minute, the self.resolved_at will be less.
             return 0
         diff = end - start
-        minutes, _ = divmod(diff.seconds, 60)
+        return diff
+
+    @property
+    def real_downtime(self):
+        downtime = self.downtime()
+        minutes, _ = divmod(downtime.seconds, 60)
         return minutes
+
+    def duration(self):
+        downtime = self.downtime()
+        days = downtime.days
+        seconds = downtime.seconds
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        return days, hours, minutes, seconds
 
     @property
     def resolved_at_timestamp(self):
