@@ -1,5 +1,6 @@
 import datetime
 import logging
+from urllib.parse import urlparse
 
 from django.conf import settings
 import gitlab
@@ -13,6 +14,16 @@ def get_api():
 
     logger.info('Skipping gitlab features...')
     return None
+
+
+def postmortem_project():
+    api = get_api()
+    if not api:
+        return
+    project = api.projects.get(settings.GITLAB_POSTMORTEM_PROJECT)
+    if not project:
+        logger.error("Postmortem project not found.")
+    return project
 
 
 def get_due_date_issues(days=None):
@@ -40,3 +51,40 @@ def get_due_date_issues(days=None):
             if days_remaining == day:
                 notify[open_issue.id] = open_issue
     return notify
+
+
+def parse_report_url(report_url):
+    """Parse report url, return project path and issue ID."""
+    path = urlparse(report_url).path.split('/')
+    if len(path) != 5:
+        logger.error(f"Report url wrong format: {report_url}")
+        logger.debug(f"URL path: {path}")
+        return False, False
+    project_path = f"{path[1]}/{path[2]}"
+    issue_id = path[4]
+    return project_path, issue_id
+
+
+def get_postmortem_project(api, project_path):
+    """Parse project name from URL and get gitlab project."""
+    project = api.projects.get(project_path)
+    if not project:
+        logger.error(f"Unable to retrieve gitlab project: {project_path}")
+        return
+    return project
+
+
+def get_postmortem_title(report_url):
+    """Get title of postmortem (gitlab issue)."""
+    project_path, issue_id = parse_report_url(report_url)
+    api = get_api()
+    if not all((api, project_path, issue_id)):
+        return
+    project = get_postmortem_project(api, project_path)
+    if not project:
+        return
+
+    issue = project.issues.get(issue_id)
+    if not issue:
+        logger.error(f"Issue #{issue_id} not found in postmortem project.")
+    return issue.title

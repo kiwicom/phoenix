@@ -25,6 +25,7 @@ services:
       - GOOGLE_SERVICE_ACCOUNT
       - SENTRY_DSN
       - GITLAB_PRIVATE_TOKEN
+      - GITLAB_URL
       - REDIS_URL
       - REDIS_PORT
       - NOTIFY_BEFORE_ETA
@@ -98,6 +99,7 @@ services:
       - GOOGLE_SERVICE_ACCOUNT
       - SENTRY_DSN
       - GITLAB_PRIVATE_TOKEN
+      - GITLAB_URL
       - REDIS_URL
       - REDIS_PORT
       - NOTIFY_BEFORE_ETA
