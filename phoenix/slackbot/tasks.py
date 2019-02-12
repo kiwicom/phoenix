@@ -1,4 +1,7 @@
+import csv
+from email.message import EmailMessage
 import logging
+import tempfile
 import time
 
 import arrow
@@ -10,13 +13,15 @@ from django.db import DatabaseError, IntegrityError, transaction
 
 from ..core.models import Monitor, Outage, Profile
 from ..integration.datadog import get_all_slack_channels, sync_monitor_details
-from ..integration.gitlab import get_due_date_issues
+from ..integration.gitlab import get_due_date_issues, get_issues_after_due_date
 from ..integration.google import get_directory_api
 from ..integration.models import GoogleGroup
 from ..outages.utils import format_datetime as format_outage_datetime
 from .bot import slack_bot_client, slack_client
 from .message import generate_slack_message
-from .utils import format_datetime, format_user_for_slack, join_channels, retrieve_user, transfrom_slack_email_domain
+from .utils import (
+    format_datetime, format_user_for_slack, join_channels, retrieve_user, send_email, transfrom_slack_email_domain
+)
 
 logger = logging.getLogger(__name__)
 
@@ -628,3 +633,57 @@ def notify_sales_about_creation(announcement):
         return
     announcement.sales_notified = True
     announcement.save()
+
+
+def send_by_email(csv_report, text=None):
+    if not settings.POSTMORTEM_EMAIL_REPORT_RECIPIENTS:
+        logger.warning("Postmortem recepients not specified. Skipping email report...")
+        return
+    message = EmailMessage()
+    message['Subject'] = "Phoenix: daily postmortem report"
+    message['from'] = settings.POSTMORTEM_EMAIL_REPORT_FROM
+    message['to'] = settings.POSTMORTEM_EMAIL_REPORT_RECIPIENTS
+    if text:
+        message.set_content(text)
+    message.add_attachment(csv_report.read(), subtype='csv', filename='postmortem_due_date_report.csv')
+    send_email(message)
+
+
+def send_to_slack(csv_report, channel, comment=None):
+    data = slack_client.api_call(
+        "files.upload",
+        channels=channel,
+        file=csv_report,
+        filename='postmortem_due_date_report.csv',
+        filetype='csv',
+        initial_comment=comment,
+    )
+    if not data['ok']:
+        logger.error(f"Uploading due date postmortem report failed: {data['error']}")
+
+
+@shared_task
+def generate_after_due_date_issues_report():
+    """Retrieve gitlab issues after due date and create report."""
+    issues = get_issues_after_due_date()
+    num_of_issues = len(issues)
+    if num_of_issues == 0:
+        reaction = 'No postmortems past their due date :tada:'
+    else:
+        reaction = f'Number of postmortems past their due date is {num_of_issues}'
+    comment = f'New postmortem report is ready. {reaction}'
+    fieldnames = ('row', 'url', 'due date')
+    with tempfile.TemporaryFile('r+') as fw:
+        csv_fw = csv.DictWriter(fw, fieldnames=fieldnames)
+        csv_fw.writeheader()
+        for row, issue in enumerate(issues, 1):
+            csv_fw.writerow({
+                fieldnames[0]: row,
+                fieldnames[1]: issue.web_url,
+                fieldnames[2]: issue.due_date,
+            })
+        fw.seek(0)
+        send_to_slack(fw, settings.SLACK_POSTMORTEM_REPORT_CHANNEL,
+                      comment=comment)
+        fw.seek(0)
+        send_by_email(fw, text=comment)

@@ -29,11 +29,16 @@ services:
       - REDIS_PORT
       - NOTIFY_BEFORE_ETA
       - GITLAB_POSTMORTEM_DAYS_TO_NOTIFY
+      - GITLAB_URL
       - ALLOWED_EMAIL_DOMAIN
       - DEVEL_GOOGLE_OAUTH_CLIENT_ID
       - DEVEL_GOOGLE_OAUTH_SECRET
       - GOOGLE_ACC
       - SLACK_NOTIFY_SALES_CHANNEL_ID
+      - SLACK_POSTMORTEM_REPORT_CHANNEL
+      - POSTMORTEM_EMAIL_REPORT_FROM
+      - POSTMORTEM_EMAIL_REPORT_RECIPIENTS
+      - SMTP_ADDR
 
     tty: true
     command:
@@ -49,16 +54,6 @@ services:
       - postgres
       - redis
       - worker
-
-  postgres:
-    image: postgres:10.1-alpine
-    ports:
-      - '0.0.0.0:5432:5432'
-
-  redis:
-    image: redis:4.0-alpine
-    ports:
-      - '6379'
 
   worker:
     build:
@@ -96,6 +91,7 @@ services:
       - GOOGLE_SERVICE_ACCOUNT
       - SENTRY_DSN
       - GITLAB_PRIVATE_TOKEN
+      - GITLAB_URL
       - REDIS_URL
       - REDIS_PORT
       - NOTIFY_BEFORE_ETA
@@ -105,6 +101,10 @@ services:
       - DEVEL_GOOGLE_OAUTH_SECRET
       - GOOGLE_ACC
       - SLACK_NOTIFY_SALES_CHANNEL_ID
+      - SLACK_POSTMORTEM_REPORT_CHANNEL
+      - POSTMORTEM_EMAIL_REPORT_FROM
+      - POSTMORTEM_EMAIL_REPORT_RECIPIENTS
+      - SMTP_ADDR
 
   scheduler:
     build:
@@ -120,3 +120,18 @@ services:
       - /tmp/celerybeat-schedule
     depends_on:
       - redis
+
+  postgres:
+    image: postgres:10.1-alpine
+    ports:
+      - '0.0.0.0:5432:5432'
+
+  redis:
+    image: redis:4.0-alpine
+    ports:
+      - '6379'
+
+  smtp-service:
+    image: namshi/smtp
+    ports:
+      - '25'

@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import smtplib
 
 import dateutil
 from django.conf import settings
@@ -190,3 +191,9 @@ def get_slack_channel_name(channel_id):
     if resp['ok']:
         return resp['channel']['name']
     return None
+
+
+def send_email(message):
+    """Helper function for sending email."""
+    with smtplib.SMTP(settings.SMTP_ADDR) as smtp:
+        smtp.send_message(message)
