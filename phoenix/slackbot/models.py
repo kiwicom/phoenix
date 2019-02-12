@@ -35,11 +35,11 @@ class Announcement(models.Model):
     @property
     def dedicated_channel_name(self):
         date = self.outage.created.date().strftime('%y%m%d')
-        systems = ','.join([system.name for system in self.outage.systems_affected.all()])[:9]
+        systems = self.outage.systems_affected_human
         offset = Outage.objects.filter(
             created__day=self.outage.created.date().day,
             pk__lt=self.outage.pk,
-            systems_affected__in=self.outage.systems_affected.all(),
+            systems_affected=self.outage.systems_affected,
         ).count()
         msg = f'o-{systems}-{date}'
         if offset:

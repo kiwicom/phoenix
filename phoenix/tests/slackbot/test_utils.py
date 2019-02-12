@@ -39,7 +39,7 @@ def test_generate_slack_message():
 
     attachment = generate_slack_message(outage, announcement)[0]
     assert len(attachment['actions']) == 5
-    assert attachment['title'] == 'N/A incident'
+    assert attachment['title'] == 'Unittest-system incident'
 
 
 @pytest.mark.django_db
