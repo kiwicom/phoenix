@@ -50,7 +50,6 @@ class AbstractOutage(models.Model):
     summary = models.TextField(null=False, blank=False, max_length=3000)
     sales_affected_choice = models.CharField(choices=SALES_AFFECTED_CHOICES, max_length=2, default=UNKNOWN)
     sales_affected = models.TextField(max_length=3000, null=True, blank=True)
-    systems_affected_bck = models.ManyToManyField(System)
     systems_affected = models.ForeignKey(System, null=True, related_name='systems_%(class)s', on_delete=models.CASCADE)
     communication_assignee = models.ForeignKey(USER_MODEL, related_name='comunicate_outages', on_delete=models.CASCADE)
     solution_assignee = models.ForeignKey(USER_MODEL, related_name='solves_outages', on_delete=models.CASCADE)
