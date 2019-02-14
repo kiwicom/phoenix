@@ -57,3 +57,16 @@ def get_issues_after_due_date():
         if due_date < now:
             after_due_date.append(issue)
     return after_due_date
+
+
+def get_gitlab_user_email(uid):
+    api = get_api()
+    if not api:
+        return
+    user = api.users.get(uid)
+    try:
+        emails = user.emails.list()
+    except gitlab.exceptions.GitlabListError as e:
+        logger.error(f"Unable to list emails for Gitlab user: {e}")
+        emails = []
+    return emails
