@@ -319,12 +319,8 @@ class Solution(AbstractSolution):
     objects = SolutionManager()
 
     outage = models.OneToOneField(Outage, on_delete=models.CASCADE)
-    postmortem_notifications = models.OneToOneField(PostmortemNotifications, on_delete=models.CASCADE, null=True, blank=True)
-
-    def create(self, *args, **kwargs):
-        if not kwargs.get('postmortem_notifications'):
-            kwargs['postmortem_notifications'] = PostmortemNotifications()
-        super().create(*args, **kwargs)
+    postmortem_notifications = models.OneToOneField(
+        PostmortemNotifications, on_delete=models.CASCADE, null=True, blank=True)
 
     @property
     def postmortem_required(self):

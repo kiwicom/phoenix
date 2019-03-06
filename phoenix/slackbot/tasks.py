@@ -13,7 +13,7 @@ from django.db import DatabaseError, IntegrityError, transaction
 
 from ..core.models import Monitor, Outage, Profile, Solution
 from ..integration.datadog import get_all_slack_channels, sync_monitor_details
-from ..integration.gitlab import get_due_date_issues, get_issues_after_due_date, get_issue
+from ..integration.gitlab import get_due_date_issues, get_issue, get_issues_after_due_date
 from ..integration.google import get_directory_api
 from ..integration.models import GoogleGroup
 from ..outages.utils import format_datetime as format_outage_datetime
@@ -696,10 +696,10 @@ def postmortem_slack_notify(solution):
     announcement_url = solution.outage.announcement.permalink
     notify_user_with_im(
         user.last_name,
-        message=f'Announcement {announcement_url} is missing postmortem report. Please create postmortem report.'
+        message=f'Please create postmortem report for this announcement {announcement_url}'
     )
     solution.postmortem_notifications.slack_notified = True
-    solution.save()
+    solution.postmortem_notifications.save()
 
 
 def postmortem_email_notify(solution):
@@ -716,16 +716,18 @@ def postmortem_email_notify(solution):
     message.set_content(f'Missing postmortem for this outage {announcement_url}')
     send_email(message)
     solution.postmortem_notifications.email_notified = True
-    solution.save()
+    solution.postmortem_notifications.save()
 
 
 def is_postmortem_missing_label(solution):
     project_slug = settings.GITLAB_POSTMORTEM_PROJECT_SLUG
-    report_url = solution.report_url
-    issue_id = report_url.split('/')[-1]
+    report_url = solution.report_url.split('/')
+    issue_id = report_url[-1]
     gl_issue = get_issue(project_slug, issue_id)
-    if gl_issue:
-        return not settings.POSTMORTEM_LABEL in gl_issue.labels
+    if not gl_issue:
+        logger.error(f"Error getting issue: {report_url}")
+        return
+    return not settings.POSTMORTEM_LABEL in gl_issue.labels
 
 
 def postmortem_label_notify(solution):
@@ -740,24 +742,24 @@ def postmortem_label_notify(solution):
         message['Subject'] = "Phoenix: postmortem report missing label"
         message['from'] = settings.POSTMORTEM_EMAIL_REPORT_FROM
         message['to'] = settings.POSTMORTEM_EMAIL_REPORT_RECIPIENTS
-        message.set_content(f'Missing label "{settings.GITLAB_POSTMORTEM_PROJECT_SLUG}" in this postmortem report {announcement_url}')
+        message.set_content(f'Missing label "{settings.POSTMORTEM_LABEL}" in this postmortem report {announcement_url}')
         send_email(message)
         solution.postmortem_notifications.label_notified = True
-        solution.save()
+        solution.postmortem_notifications.save()
 
 
 @shared_task
 def postmortem_notifications():
-    list_limit = arrow.now().shift(hours=-settings.POSTMORTEM_NOTIFICATION_LIST_LIMIT)
-    slack_limit = arrow.now().shift(hours=-settings.POSTMORTEM_SLACK_NOTIFICATION_LIMIT)
-    email_limit = arrow.now().shift(hours=-settings.POSTMORTEM_EMAIL_NOTIFICATION_LIMIT)
-    label_limit = arrow.now().shift(hours=-settings.POSTMORTEM_LABEL_NOTIFICATION_LIMIT)
+    list_limit = arrow.now().shift(hours=-settings.POSTMORTEM_NOTIFICATION_LIST_LIMIT).datetime
+    slack_limit = arrow.now().shift(hours=-settings.POSTMORTEM_SLACK_NOTIFICATION_LIMIT).datetime
+    email_limit = arrow.now().shift(hours=-settings.POSTMORTEM_EMAIL_NOTIFICATION_LIMIT).datetime
+    label_limit = arrow.now().shift(hours=-settings.POSTMORTEM_LABEL_NOTIFICATION_LIMIT).datetime
 
-    solutions = Solution.objects.outcome_is_postmortem.filter(created__gte=list_limit).filter(created__lte=slack_limit)
+    solutions = Solution.objects.outcome_is_postmortem().filter(created__gte=list_limit).filter(
+                created__lte=slack_limit)
     for solution in solutions:
         if solution.missing_postmortem:
             postmortem_slack_notify(solution)
-
             if solution.created < email_limit:
                 postmortem_email_notify(solution)
         else:

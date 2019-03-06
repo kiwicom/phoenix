@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
 
-from phoenix.core.models import Monitor, Outage, Solution, PostmortemNotifications
+from phoenix.core.models import Monitor, Outage, Solution
 
 from .models import Announcement
 from .tasks import create_or_update_announcement, sync_monitor_details_task
