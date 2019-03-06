@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db import DatabaseError, IntegrityError, transaction
 
-from ..core.models import Monitor, Outage, Profile
+from ..core.models import Monitor, Outage, Profile, Solution
 from ..integration.datadog import get_all_slack_channels, sync_monitor_details
 from ..integration.gitlab import get_due_date_issues
 from ..integration.google import get_directory_api
@@ -628,3 +628,40 @@ def notify_sales_about_creation(announcement):
         return
     announcement.sales_notified = True
     announcement.save()
+
+
+def postmortem_slack_notify(solution):
+    user = solution.created_by
+    announcement_url = solution.outage.announcement.permalink
+    notify_user_with_im(
+        user.last_name,
+        message=f'Announcement {announcement_url} is missing postmortem report. Please create postmortem report.'
+    )
+
+
+def postmortem_email_notify(solution):
+    pass
+
+
+def postmortem_label_notify(solution):
+    pass
+
+
+@shared_task
+def postmortem_notifications():
+    list_limit = arrow.now().shift(hours=-settings.POSTMORTEM_NOTIFICATION_LIST_LIMIT)
+    slack_limit = arrow.now().shift(hours=-settings.POSTMORTEM_SLACK_NOTIFICATION_LIMIT)
+    email_limit = arrow.now().shift(hours=-settings.POSTMORTEM_EMAIL_NOTIFICATION_LIMIT)
+    label_limit = arrow.now().shift(hours=-settings.POSTMORTEM_LABEL_NOTIFICATION_LIMIT)
+
+    solutions = Solution.objects.outcome_is_postmortem.filter(created__gt=list_limit).filter(created__lt=slack_limit)
+    for solution in solutions:
+        if solution.missing_postmortem:
+            if not solution.postmortem_notifications.slack_notified:
+                postmortem_slack_notify(solution)
+
+            if solution.created < email_limit and not solution.postmortem_notifications.email_notified:
+                postmortem_email_notify(solution)
+        else:
+            if solution.created < label_limit and not solution.postmortem_notifications.label_notified:
+                postmortem_label_notify(solution)
