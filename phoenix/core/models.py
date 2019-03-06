@@ -321,6 +321,11 @@ class Solution(AbstractSolution):
     outage = models.OneToOneField(Outage, on_delete=models.CASCADE)
     postmortem_notifications = models.OneToOneField(PostmortemNotifications, on_delete=models.CASCADE, null=True, blank=True)
 
+    def create(self, *args, **kwargs):
+        if not kwargs.get('postmortem_notifications'):
+            kwargs['postmortem_notifications'] = PostmortemNotifications()
+        super().create(*args, **kwargs)
+
     @property
     def postmortem_required(self):
         return self.suggested_outcome == self.POSTMORTEM
@@ -366,8 +371,6 @@ class Solution(AbstractSolution):
         if self.postmortem_required:
             return not self.report_url
         return False
-
-
 
     @property
     def full_report_url(self):
