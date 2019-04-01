@@ -311,7 +311,7 @@ def create_or_update_announcement(outage_pk, check_history=False, resolved=False
         with transaction.atomic():
             outage = Outage.objects.select_for_update().get(pk=outage_pk)
             if not outage.announce_on_slack:
-                logger.info("Outage can't be announced on slack")
+                logger.info("Outage slack announcement disabled")
                 return
             announcement = Announcement.objects.select_for_update().get(outage_id=outage.id)
 
