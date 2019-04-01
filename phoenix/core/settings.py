@@ -209,6 +209,8 @@ SLACK_NOTIFY_SALES_CHANNEL_ID = os.getenv("SLACK_NOTIFY_SALES_CHANNEL_ID")
 NOTIFY_BEFORE_ETA = int(os.getenv('NOTIFY_BEFORE_ETA', '10'))
 
 DATADOG_TRACE = {
+    'AGENT_HOSTNAME': os.getenv('DATADOG_AGENT_HOSTNAME', 'localhost'),
+    'AGENT_PORT': os.getenv('DATADOG_AGENT_PORT', '8126'),
     'TAGS': {'env': os.getenv('DATADOG_SERVICE_NAME', 'Phoenix-default')},
 }
 DATADOG_API_KEY = os.getenv('DATADOG_API_KEY')

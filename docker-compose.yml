@@ -34,6 +34,8 @@ services:
       - DEVEL_GOOGLE_OAUTH_SECRET
       - GOOGLE_ACC
       - SLACK_NOTIFY_SALES_CHANNEL_ID
+      - DATADOG_AGENT_HOSTNAME
+      - DATADOG_AGENT_PORT
 
     tty: true
     command:
@@ -105,6 +107,8 @@ services:
       - DEVEL_GOOGLE_OAUTH_SECRET
       - GOOGLE_ACC
       - SLACK_NOTIFY_SALES_CHANNEL_ID
+      - DATADOG_AGENT_HOSTNAME
+      - DATADOG_AGENT_PORT
 
   scheduler:
     build:
