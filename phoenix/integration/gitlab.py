@@ -1,5 +1,6 @@
 import datetime
 import logging
+import re
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -55,14 +56,14 @@ def get_due_date_issues(days=None):
 
 def parse_report_url(report_url):
     """Parse report url, return project path and issue ID."""
-    path = urlparse(report_url).path.split('/')
-    if len(path) != 5:
+    path = urlparse(report_url).path
+    groups = re.match(r'/(?P<group>\w+)/(?P<project>\w+)/issues/(?P<issue_id>\d+)', path)
+    if not groups:
         logger.error(f"Report url wrong format: {report_url}")
         logger.debug(f"URL path: {path}")
         return False, False
-    project_path = f"{path[1]}/{path[2]}"
-    issue_id = path[4]
-    return project_path, issue_id
+    project_path = f"{groups['group']}/{groups['project']}"
+    return project_path, groups['issue_id']
 
 
 def get_postmortem_project(api, project_path):
