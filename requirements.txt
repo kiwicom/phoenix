@@ -12,9 +12,9 @@ celery==4.2.1
 certifi==2018.10.15       # via requests
 chardet==3.0.4            # via requests
 colorama==0.4.0           # via structlog
-datadog==0.24.0
-ddtrace==0.16.0
-decorator==4.3.0          # via datadog
+datadog==0.28.0
+ddtrace==0.23.0
+decorator==4.4.0          # via datadog
 defusedxml==0.5.0         # via python3-openid
 django-allauth==0.38.0
 django-celerybeat-status==0.0.10
