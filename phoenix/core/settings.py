@@ -208,13 +208,21 @@ SLACK_NOTIFY_SALES_CHANNEL_ID = os.getenv("SLACK_NOTIFY_SALES_CHANNEL_ID")
 
 NOTIFY_BEFORE_ETA = int(os.getenv('NOTIFY_BEFORE_ETA', '10'))
 
+# DATADOG
 DATADOG_TRACE = {
     'AGENT_HOSTNAME': os.getenv('DATADOG_AGENT_HOSTNAME', 'localhost'),
     'AGENT_PORT': os.getenv('DATADOG_AGENT_PORT', '8126'),
-    'TAGS': {'env': os.getenv('DATADOG_SERVICE_NAME', 'Phoenix-default')},
+    'TAGS': {
+        'env': os.getenv('DATADOG_SERVICE_NAME', 'Phoenix-default'),
+    },
 }
+hostname = os.getenv('DATADOG_TAG_HOST', os.getenv('HOSTNAME'))
+if hostname:
+    DATADOG_TRACE['TAGS']['host'] = hostname
+
 DATADOG_API_KEY = os.getenv('DATADOG_API_KEY')
 DATADOG_APP_KEY = os.getenv('DATADOG_APP_KEY')
+
 
 RAVEN_CONFIG = {
     'dsn': os.getenv('SENTRY_DSN'),
