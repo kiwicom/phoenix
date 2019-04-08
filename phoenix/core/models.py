@@ -56,6 +56,7 @@ class AbstractOutage(models.Model):
     created = models.DateTimeField(default=timezone.now)
     created_by = models.ForeignKey(USER_MODEL, related_name='outage_created', on_delete=models.CASCADE)
     started_at = models.DateTimeField(default=timezone.now)
+    announce_on_slack = models.BooleanField(default=True)
 
     # Never set ETA manually. Use helper methods "set_eta" and "real_eta"
     # for proper representation.
@@ -297,6 +298,7 @@ class AbstractSolution(models.Model):
     solving_time = models.IntegerField(default=0)
     suggested_outcome = models.CharField(choices=OUTCOME_CHOICES, default=NONE, max_length=2)
     report_url = models.TextField(null=True, blank=True)
+    report_title = models.TextField(null=True, blank=True)
     sales_affected = models.TextField(max_length=3000, null=True, blank=True)
 
     @property
@@ -320,6 +322,8 @@ class Solution(AbstractSolution):
     @property
     def real_downtime(self):
         downtime = self.downtime()
+        if not downtime:
+            return 0
         minutes, _ = divmod(downtime.seconds, 60)
         return minutes
 

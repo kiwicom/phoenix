@@ -16,12 +16,11 @@ from ..integration.datadog import get_all_slack_channels, sync_monitor_details
 from ..integration.gitlab import get_due_date_issues, get_gitlab_user_email, get_issues_after_due_date
 from ..integration.google import get_directory_api
 from ..integration.models import GoogleGroup
+from ..integration.smtp import send_email
 from ..outages.utils import format_datetime as format_outage_datetime
 from .bot import slack_bot_client, slack_client
 from .message import generate_slack_message
-from .utils import (
-    format_datetime, format_user_for_slack, join_channels, retrieve_user, send_email, transfrom_slack_email_domain
-)
+from .utils import format_datetime, format_user_for_slack, join_channels, retrieve_user, transfrom_slack_email_domain
 
 logger = logging.getLogger(__name__)
 
@@ -315,6 +314,9 @@ def create_or_update_announcement(outage_pk, check_history=False, resolved=False
     try:
         with transaction.atomic():
             outage = Outage.objects.select_for_update().get(pk=outage_pk)
+            if not outage.announce_on_slack:
+                logger.info("Outage slack announcement disabled")
+                return
             announcement = Announcement.objects.select_for_update().get(outage_id=outage.id)
 
             message_ts = announcement.message_ts

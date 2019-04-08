@@ -209,16 +209,27 @@ SLACK_NOTIFY_SALES_CHANNEL_ID = os.getenv("SLACK_NOTIFY_SALES_CHANNEL_ID")
 SLACK_POSTMORTEM_REPORT_CHANNEL = os.getenv("SLACK_POSTMORTEM_REPORT_CHANNEL")
 
 SMTP_ADDR = os.getenv('SMTP_ADDR', 'localhost')
+SMTP_PORT = os.getenv('SMTP_PORT', '25')
 POSTMORTEM_EMAIL_REPORT_FROM = os.getenv("POSTMORTEM_EMAIL_REPORT_FROM")
 POSTMORTEM_EMAIL_REPORT_RECIPIENTS = os.getenv("POSTMORTEM_EMAIL_REPORT_RECIPIENTS")
 
 NOTIFY_BEFORE_ETA = int(os.getenv('NOTIFY_BEFORE_ETA', '10'))
 
+# DATADOG
 DATADOG_TRACE = {
-    'TAGS': {'env': os.getenv('DATADOG_SERVICE_NAME', 'Phoenix-default')},
+    'AGENT_HOSTNAME': os.getenv('DATADOG_AGENT_HOSTNAME', 'localhost'),
+    'AGENT_PORT': os.getenv('DATADOG_AGENT_PORT', '8126'),
+    'TAGS': {
+        'env': os.getenv('DATADOG_SERVICE_NAME', 'Phoenix-default'),
+    },
 }
+hostname = os.getenv('DATADOG_TAG_HOST', os.getenv('HOSTNAME'))
+if hostname:
+    DATADOG_TRACE['TAGS']['host'] = hostname
+
 DATADOG_API_KEY = os.getenv('DATADOG_API_KEY')
 DATADOG_APP_KEY = os.getenv('DATADOG_APP_KEY')
+
 
 RAVEN_CONFIG = {
     'dsn': os.getenv('SENTRY_DSN'),
@@ -228,6 +239,8 @@ GITLAB_URL = os.getenv('GITLAB_URL')
 GITLAB_PRIVATE_TOKEN = os.getenv('GITLAB_PRIVATE_TOKEN')
 GITLAB_POSTMORTEM_DAYS_TO_NOTIFY = list(map(int, os.getenv('GITLAB_POSTMORTEM_DAYS_TO_NOTIFY', '3,7').split(',')))
 
+GOOGLE_ACC = os.getenv('GOOGLE_ACC')
 GOOGLE_SERVICE_ACCOUNT = os.getenv('GOOGLE_SERVICE_ACCOUNT')
 if GOOGLE_SERVICE_ACCOUNT:
     GOOGLE_SERVICE_ACCOUNT = json.loads(GOOGLE_SERVICE_ACCOUNT)
+ALLOW_ALL_TO_NOTIFY = distutils.util.strtobool(os.getenv('ALLOW_ALL_TO_NOTIFY', 'False'))

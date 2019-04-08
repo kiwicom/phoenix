@@ -19,7 +19,8 @@ class OutageBaseForm(ModelForm):
 
 
 class OutageCreateForm(OutageBaseForm):
-    pass
+    class Meta(OutageBaseForm.Meta):
+        fields = OutageBaseForm.Meta.fields + ['announce_on_slack']
 
 
 class OutageUpdateForm(OutageBaseForm):
