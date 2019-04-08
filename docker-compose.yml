@@ -25,6 +25,7 @@ services:
       - GOOGLE_SERVICE_ACCOUNT
       - SENTRY_DSN
       - GITLAB_PRIVATE_TOKEN
+      - GITLAB_URL
       - REDIS_URL
       - REDIS_PORT
       - NOTIFY_BEFORE_ETA
@@ -34,6 +35,9 @@ services:
       - DEVEL_GOOGLE_OAUTH_SECRET
       - GOOGLE_ACC
       - SLACK_NOTIFY_SALES_CHANNEL_ID
+      - DATADOG_AGENT_HOSTNAME
+      - DATADOG_AGENT_PORT
+      - ALLOW_ALL_TO_NOTIFY
 
     tty: true
     command:
@@ -96,6 +100,7 @@ services:
       - GOOGLE_SERVICE_ACCOUNT
       - SENTRY_DSN
       - GITLAB_PRIVATE_TOKEN
+      - GITLAB_URL
       - REDIS_URL
       - REDIS_PORT
       - NOTIFY_BEFORE_ETA
@@ -105,6 +110,9 @@ services:
       - DEVEL_GOOGLE_OAUTH_SECRET
       - GOOGLE_ACC
       - SLACK_NOTIFY_SALES_CHANNEL_ID
+      - DATADOG_AGENT_HOSTNAME
+      - DATADOG_AGENT_PORT
+      - ALLOW_ALL_TO_NOTIFY
 
   scheduler:
     build:

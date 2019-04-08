@@ -310,6 +310,7 @@ class AbstractSolution(models.Model):
     solving_time = models.IntegerField(default=0)
     suggested_outcome = models.CharField(choices=OUTCOME_CHOICES, default=NONE, max_length=2)
     report_url = models.TextField(null=True, blank=True)
+    report_title = models.TextField(null=True, blank=True)
 
     @property
     def suggested_outcome_human(self):

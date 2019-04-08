@@ -16,7 +16,8 @@ from rest_framework.parsers import FormParser
 from rest_framework.response import Response
 
 from ..core.models import Alert, Monitor, Outage, Profile, Solution
-from ..core.utils import user_can_edit_all_outages, user_can_modify_outage
+from ..core.utils import user_can_announnce, user_can_edit_all_outages, user_can_modify_outage
+from ..integration.gitlab import get_postmortem_title
 from .bot import slack_bot_client, slack_client
 from .models import Announcement
 from .tasks import create_channel as create_channel_task
@@ -259,7 +260,7 @@ def handle_user_change(request, data):
 @verify_token
 def announce(request):
     """Start slack dialog."""
-    if not request.user.has_perm('slackbot.add_announcement'):
+    if not user_can_announnce(request.user):
         logger.warning(f'User {request.user.email} missing permissions')
         post_warning_to_user(
             user_id=request.user.last_name,
@@ -856,6 +857,11 @@ class DialogSubmissionHandler():
             solution.suggested_outcome = self.dialog_data.get('outcome')
         if self.dialog_data.get('report_url'):
             solution.report_url = self.dialog_data.get('report_url')
+            title = get_postmortem_title(solution.report_url)
+            if title:
+                solution.report_title = title
+            elif not title and solution.report_title:
+                solution.report_title = ""
         outage.sales_affected_choice = self.dialog_data.get('sales_affected_choice')
         outage.lost_bookings = lost_bookings
         outage.impact_on_turnover = impact_on_turnover
@@ -946,6 +952,13 @@ class DialogSubmissionHandler():
             if report_url and not report_url.startswith('http'):
                 report_url = f'https://{report_url}'
             solution.report_url = report_url
+
+            title = get_postmortem_title(report_url)
+            if title:
+                solution.report_title = title
+            elif not title and solution.report_title:
+                solution.report_title = ""
+
             outage.save(modified_by=self.actor)  # NOTE: hotfix for broken comment system
             solution.save(modified_by=self.actor)
 
