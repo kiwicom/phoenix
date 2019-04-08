@@ -321,6 +321,8 @@ class Solution(AbstractSolution):
     @property
     def real_downtime(self):
         downtime = self.downtime()
+        if not downtime:
+            return 0
         minutes, _ = divmod(downtime.seconds, 60)
         return minutes
 
