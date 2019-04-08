@@ -334,7 +334,7 @@ class Solution(AbstractSolution):
     def real_downtime(self):
         downtime = self.downtime()
         if not downtime:
-            return downtime
+            return 0
         minutes, _ = divmod(downtime.seconds, 60)
         return minutes
 

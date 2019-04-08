@@ -827,7 +827,7 @@ class DialogSubmissionHandler():
         solution.save(modified_by=self.actor)
         solution.outage.save(modified_by=self.actor)
 
-    def editsolved(self):
+    def editsolved(self):  # Ignore RadonBear
         outage = Outage.objects.get(id=self.obj)
         solution = outage.solution
         lost_bookings = self.dialog_data.get('lost_bookings')
