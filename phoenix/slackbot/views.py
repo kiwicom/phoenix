@@ -16,7 +16,7 @@ from rest_framework.parsers import FormParser
 from rest_framework.response import Response
 
 from ..core.models import Alert, Monitor, Outage, Profile, Solution
-from ..core.utils import user_can_edit_all_outages, user_can_modify_outage
+from ..core.utils import user_can_announnce, user_can_edit_all_outages, user_can_modify_outage
 from ..integration.gitlab import get_postmortem_title
 from .bot import slack_bot_client, slack_client
 from .models import Announcement
@@ -260,7 +260,7 @@ def handle_user_change(request, data):
 @verify_token
 def announce(request):
     """Start slack dialog."""
-    if not request.user.has_perm('slackbot.add_announcement'):
+    if not user_can_announnce(request.user):
         logger.warning(f'User {request.user.email} missing permissions')
         post_warning_to_user(
             user_id=request.user.last_name,

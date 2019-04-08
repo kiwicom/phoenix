@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.decorators import permission_required
 from django.urls import path
 
@@ -6,15 +7,20 @@ from .views import (
     SolutionCreate, SolutionUpdate
 )
 
+if settings.ALLOW_ALL_TO_NOTIFY:
+    create_view = OutageCreate.as_view()
+else:
+    create_view = permission_required(
+                    'slackbot.add_announcement',
+                    login_url='/',
+                    )(OutageCreate.as_view())
+
 urlpatterns = [
     path('', OutagesList.as_view(), name='outages_list'),
     path('monitors', MonitorList.as_view(), name='monitors_list'),
     path(
         'create',
-        permission_required(
-            'slackbot.add_announcement',
-            login_url='/',
-        )(OutageCreate.as_view()),
+        create_view,
         name='outage_create',
     ),
     path('<int:pk>', OutageDetail.as_view(), name='outage_detail'),

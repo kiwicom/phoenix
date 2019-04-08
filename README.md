@@ -148,6 +148,7 @@ Phoenix is able to retrieve configuration/secrets from environment variables. Th
 
 - `DEVEL_GOOGLE_OAUTH_CLIENT_ID` — optional setting used in the `init_devel_instance` command
 - `DEVEL_GOOGLE_OAUTH_SECRET` — optional setting used in the `init_devel_instance` command
+- `ALLOW_ALL_TO_NOTIFY` - allow everyone to announce outage
 
 ## Development setup
 

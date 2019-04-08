@@ -37,6 +37,7 @@ services:
       - SLACK_NOTIFY_SALES_CHANNEL_ID
       - DATADOG_AGENT_HOSTNAME
       - DATADOG_AGENT_PORT
+      - ALLOW_ALL_TO_NOTIFY
 
     tty: true
     command:
@@ -111,6 +112,7 @@ services:
       - SLACK_NOTIFY_SALES_CHANNEL_ID
       - DATADOG_AGENT_HOSTNAME
       - DATADOG_AGENT_PORT
+      - ALLOW_ALL_TO_NOTIFY
 
   scheduler:
     build:
