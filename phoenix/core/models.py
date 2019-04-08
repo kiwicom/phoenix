@@ -56,6 +56,7 @@ class AbstractOutage(models.Model):
     created = models.DateTimeField(default=timezone.now)
     created_by = models.ForeignKey(USER_MODEL, related_name='outage_created', on_delete=models.CASCADE)
     started_at = models.DateTimeField(default=timezone.now)
+    announce_on_slack = models.BooleanField(default=True)
 
     # Never set ETA manually. Use helper methods "set_eta" and "real_eta"
     # for proper representation.
