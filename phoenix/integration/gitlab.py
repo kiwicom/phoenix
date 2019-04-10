@@ -35,6 +35,11 @@ def postmortem_project():
     return project
 
 
+def get_open_postmortems():
+    project = postmortem_project()
+    return project.issues.list(state='opened')
+
+
 def parse_report_url(report_url):
     """Parse report url, return project path and issue ID."""
     path = urlparse(report_url).path
@@ -80,7 +85,7 @@ def get_due_date_issues(days=None):
         days = settings.GITLAB_POSTMORTEM_DAYS_TO_NOTIFY
     days = sorted(days, reverse=True)
 
-    opened_issues = get_open_issues()
+    opened_issues = get_open_postmortems()
 
     notify = {}
     now = datetime.date.today()
@@ -97,7 +102,7 @@ def get_due_date_issues(days=None):
 
 
 def get_issues_after_due_date():
-    opened_issues = get_open_issues()
+    opened_issues = get_open_postmortems()
     now = datetime.date.today()
     after_due_date = []
     for issue in opened_issues:
