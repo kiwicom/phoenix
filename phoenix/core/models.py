@@ -369,7 +369,7 @@ class Solution(AbstractSolution):
     def duration(self):
         downtime = self.downtime()
         if not downtime:
-            return 0
+            return 0, 0, 0, 0
         days = downtime.days
         seconds = downtime.seconds
         minutes, seconds = divmod(seconds, 60)

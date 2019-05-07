@@ -13,15 +13,14 @@ from django.db import DatabaseError, IntegrityError, transaction
 
 from ..core.models import Monitor, Outage, Profile, Solution
 from ..integration.datadog import get_all_slack_channels, sync_monitor_details
-from ..integration.gitlab import get_due_date_issues, get_issue, get_issues_after_due_date
+from ..integration.gitlab import get_due_date_issues, get_gitlab_user_email, get_issue, get_issues_after_due_date
 from ..integration.google import get_directory_api
 from ..integration.models import GoogleGroup
+from ..integration.smtp import send_email
 from ..outages.utils import format_datetime as format_outage_datetime
 from .bot import slack_bot_client, slack_client
 from .message import generate_slack_message
-from .utils import (
-    format_datetime, format_user_for_slack, join_channels, retrieve_user, send_email, transfrom_slack_email_domain
-)
+from .utils import format_datetime, format_user_for_slack, join_channels, retrieve_user, transfrom_slack_email_domain
 
 logger = logging.getLogger(__name__)
 
@@ -604,13 +603,24 @@ def notify_users_with_due_date_postmortems():
     for issue in due_date_issues.values():
         url = issue.web_url
         for assignee in issue.assignees:
-            # TODO: linking users to slack users using gitlab_api.user.emails.list(). Needs to be admin.
-            user = f'{assignee["username"]}@{email_domain}'
-            user = retrieve_user(email=user)
-            notify_user_with_im(
-                user.last_name,
-                message=f'Opened postmortem is nearing due date. Please review it. {url}',
-            )
+            uid = assignee['id']
+            user = None
+            user_emails = get_gitlab_user_email(uid)
+            for email in user_emails:
+                user = retrieve_user(email=email)
+                if user:
+                    break
+            if not user:
+                # fallback if unable to retrieve user email from gitlab
+                user_email = f'{assignee["username"]}@{email_domain}'
+                user = retrieve_user(email=user_email)
+            if user:
+                notify_user_with_im(
+                    user.last_name,
+                    message=f'Opened postmortem is nearing due date. Please review it. {url}',
+                )
+            else:
+                logger.warning(f"Unable to retrieve gitlab user (ID: {uid}, Email: {assignee['username']})")
 
 
 @shared_task(time_limit=5)
