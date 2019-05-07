@@ -294,12 +294,20 @@ def announce(request):
                                                   in Suggested outcome.''',
                                   },
                                   {
-                                      'label': 'Sales affected details',
-                                      'type': 'textarea',
-                                      'name': 'sales_affected',
-                                      'hint': '''Please fill in number of lost bookings and financial impact on
-                                                  turnover''',
+                                      'label': 'Lost bookings',
+                                      'type': 'text',
+                                      'name': 'lost_bookings',
+                                      'subtype': 'number',
                                       'optional': True,
+                                      'hint': 'Specify how many bookings have been lost if any (e.g. 100).',
+                                  },
+                                  {
+                                      'label': 'Impact on turnover',
+                                      'type': 'text',
+                                      'name': 'impact_on_turnover',
+                                      'subtype': 'number',
+                                      'optional': True,
+                                      'hint': 'Specify impact on turnover in EUR, if any (e.g. 1000).',
                                   },
                                   {
                                       'label': 'Primary affected system',
@@ -392,12 +400,22 @@ class InteractiveMesssageHandler():
                     'hint': 'If sales have been affected choose Postmortem report in Suggested outcome.',
                 },
                 {
-                    'label': 'Sales affected details',
-                    'type': 'textarea',
-                    'name': 'sales_affected',
-                    'value': self.outage.sales_affected,
-                    'hint': 'Please fill in number of lost bookings and financial impact on turnover',
+                    'label': 'Lost bookings',
+                    'type': 'text',
+                    'name': 'lost_bookings',
+                    'subtype': 'number',
                     'optional': True,
+                    'value': self.outage.lost_bookings,
+                    'hint': 'Specify how many bookings have been lost if any (e.g. 100).',
+                },
+                {
+                    'label': 'Impact on turnover',
+                    'type': 'text',
+                    'name': 'impact_on_turnover',
+                    'subtype': 'number',
+                    'optional': True,
+                    'value': self.outage.impact_on_turnover,
+                    'hint': 'Specify impact on turnover in EUR, if any (e.g. 1000).',
                 },
                 {
                     'label': 'Reason for this change?',
@@ -433,8 +451,11 @@ class InteractiveMesssageHandler():
         }
 
     def resolve(self):
-        Solution.objects.create(outage=self.outage, created_by=provision_slack_user(self.actor_id),
-                                sales_affected=self.outage.sales_affected)
+        Solution.objects.create(outage=self.outage, created_by=provision_slack_user(self.actor_id))
+        if not self.outage.sales_affected_choice == Outage.UNKNOWN:
+            sales_affected = self.outage.sales_affected_choice
+        else:
+            sales_affected = ''
         return {
             'callback_id': f'{self.outage.id}_resolve',
             'title': f'{self.outage.summary[:20]}...',
@@ -453,15 +474,26 @@ class InteractiveMesssageHandler():
                     'type': 'select',
                     'options': SALES_AFFECTED_CHOICE_OPT_SOLUTION,
                     'name': 'sales_affected_choice',
-                    'value': self.outage.sales_affected_choice if not Outage.UNKNOWN else '',
+                    'value': sales_affected,
                     'hint': 'If sales have been affected choose Postmortem report in Suggested outcome.',
                 },
                 {
-                    'label': 'Sales affected details',
-                    'type': 'textarea',
-                    'name': 'sales_affected',
-                    'value': self.outage.sales_affected,
-                    'hint': 'Please fill in number of lost bookings and financial impact on turnover',
+                    'label': 'Lost bookings',
+                    'type': 'text',
+                    'name': 'lost_bookings',
+                    'subtype': 'number',
+                    'optional': True,
+                    'value': self.outage.lost_bookings,
+                    'hint': 'Specify how many bookings have been lost if any (e.g. 100).',
+                },
+                {
+                    'label': 'Impact on turnover',
+                    'type': 'text',
+                    'name': 'impact_on_turnover',
+                    'subtype': 'number',
+                    'optional': True,
+                    'value': self.outage.impact_on_turnover,
+                    'hint': 'Specify impact on turnover in EUR, if any (e.g. 1000).',
                 },
                 {
                     'type': 'text',
@@ -540,11 +572,22 @@ class InteractiveMesssageHandler():
                     'hint': 'If sales have been affected choose Postmortem report in Suggested outcome.',
                 },
                 {
-                    'label': 'Sales affected details',
-                    'type': 'textarea',
-                    'name': 'sales_affected',
-                    'value': self.outage.sales_affected,
-                    'hint': 'Please fill in number of lost bookings and financial impact on turnover',
+                    'label': 'Lost bookings',
+                    'type': 'text',
+                    'name': 'lost_bookings',
+                    'subtype': 'number',
+                    'optional': True,
+                    'value': self.outage.lost_bookings,
+                    'hint': 'Specify how many bookings have been lost if any (e.g. 100).',
+                },
+                {
+                    'label': 'Impact on turnover',
+                    'type': 'text',
+                    'name': 'impact_on_turnover',
+                    'subtype': 'number',
+                    'optional': True,
+                    'value': self.outage.impact_on_turnover,
+                    'hint': 'Specify impact on turnover in EUR, if any (e.g. 1000).',
                 },
                 {
                     'label': 'Suggested outcome',
@@ -659,6 +702,8 @@ class DialogSubmissionHandler():
 
     def edit(self):
         eta = self.dialog_data.get('eta')
+        lost_bookings = self.dialog_data.get('lost_bookings')
+        impact_on_turnover = self.dialog_data.get('impact_on_turnover')
         if eta:
             try:
                 int(eta)
@@ -667,13 +712,31 @@ class DialogSubmissionHandler():
                     "name": "eta",
                     "error": "Invalid format. Specify ETA in minutes (for example: 30)."
                 })
-                return
+        if lost_bookings:
+            try:
+                int(lost_bookings)
+            except ValueError:
+                self.errors.append({
+                    "name": "lost_bookings",
+                    "error": "Invalid format. Needs to be specified as number (e.g. 1000)."
+                })
+        if impact_on_turnover:
+            try:
+                int(impact_on_turnover)
+            except ValueError:
+                self.errors.append({
+                    "name": "impact_on_turnover",
+                    "error": "Invalid format. Needs to be specified as number (e.g. 1000)."
+                })
+        if self.errors:
+            return
 
         outage = Outage.objects.get(id=self.obj)
         outage.set_eta(eta)
         change_desc = self.dialog_data.get('more_info', 0)
         outage.sales_affected_choice = self.dialog_data.get('sales_affected_choice')
-        outage.sales_affected = self.dialog_data.get('sales_affected')
+        outage.lost_bookings = lost_bookings
+        outage.impact_on_turnover = impact_on_turnover
         outage.save(change_desc=change_desc, modified_by=self.actor)
 
     def editassignees(self):
@@ -684,6 +747,8 @@ class DialogSubmissionHandler():
 
     def new(self):
         eta = self.dialog_data.get('eta')
+        lost_bookings = self.dialog_data.get('lost_bookings')
+        impact_on_turnover = self.dialog_data.get('impact_on_turnover')
         if eta:
             try:
                 int(eta)
@@ -692,11 +757,29 @@ class DialogSubmissionHandler():
                     "name": "eta",
                     "error": "Invalid format. Specify ETA in minutes (for example: 30)."
                 })
-                return
+        if lost_bookings:
+            try:
+                int(lost_bookings)
+            except ValueError:
+                self.errors.append({
+                    "name": "lost_bookings",
+                    "error": "Invalid format. Needs to be specified as number (e.g. 1000)."
+                })
+        if impact_on_turnover:
+            try:
+                int(impact_on_turnover)
+            except ValueError:
+                self.errors.append({
+                    "name": "impact_on_turnover",
+                    "error": "Invalid format. Needs to be specified as number (e.g. 1000)."
+                })
+        if self.errors:
+            return
 
         outage = Outage(summary=self.dialog_data.get('summary'), created_by=self.request.user,
                         sales_affected_choice=self.dialog_data.get('sales_affected_choice'),
-                        sales_affected=self.dialog_data.get('sales_affected'))
+                        lost_bookings=lost_bookings,
+                        impact_on_turnover=impact_on_turnover)
         outage.set_eta(eta)
         outage.save()
         added_system = self.dialog_data.get('affected_system')
@@ -705,6 +788,8 @@ class DialogSubmissionHandler():
     def resolve(self):
         outage = Outage.objects.get(id=self.obj)
         user_tz = self.request.user.profile.timezone
+        lost_bookings = self.dialog_data.get('lost_bookings')
+        impact_on_turnover = self.dialog_data.get('impact_on_turnover')
         try:
             # TODO: fix midnight
             resolved_at = arrow.get(self.dialog_data.get('real_downtime'), 'YYYY-MM-DD HH:mm')
@@ -714,19 +799,57 @@ class DialogSubmissionHandler():
                 'name': 'real_downtime',
                 'error': 'Invalid format.',
             })
+        if lost_bookings:
+            try:
+                int(lost_bookings)
+            except ValueError:
+                self.errors.append({
+                    "name": "lost_bookings",
+                    "error": "Invalid format. Needs to be specified as number (e.g. 1000)."
+                })
+        if impact_on_turnover:
+            try:
+                int(impact_on_turnover)
+            except ValueError:
+                self.errors.append({
+                    "name": "impact_on_turnover",
+                    "error": "Invalid format. Needs to be specified as number (e.g. 1000)."
+                })
+        if self.errors:
             return
         solution = outage.solution
         solution.resolved_at = resolved_at
         solution.summary = self.dialog_data.get('summary')
         solution.suggested_outcome = self.dialog_data.get('outcome')
         outage.sales_affected_choice = self.dialog_data.get('sales_affected_choice')
-        outage.sales_affected = self.dialog_data.get('sales_affected')
+        outage.lost_bookings = lost_bookings
+        outage.impact_on_turnover = impact_on_turnover
         solution.save(modified_by=self.actor)
         solution.outage.save(modified_by=self.actor)
 
-    def editsolved(self):
+    def editsolved(self):  # Ignore RadonBear
         outage = Outage.objects.get(id=self.obj)
         solution = outage.solution
+        lost_bookings = self.dialog_data.get('lost_bookings')
+        impact_on_turnover = self.dialog_data.get('impact_on_turnover')
+        if lost_bookings:
+            try:
+                int(lost_bookings)
+            except ValueError:
+                self.errors.append({
+                    "name": "lost_bookings",
+                    "error": "Invalid format. Needs to be specified as number (e.g. 1000)."
+                })
+        if impact_on_turnover:
+            try:
+                int(impact_on_turnover)
+            except ValueError:
+                self.errors.append({
+                    "name": "impact_on_turnover",
+                    "error": "Invalid format. Needs to be specified as number (e.g. 1000)."
+                })
+        if self.errors:
+            return
 
         if self.dialog_data.get('summary'):
             solution.summary = self.dialog_data.get('summary')
@@ -740,7 +863,8 @@ class DialogSubmissionHandler():
             elif not title and solution.report_title:
                 solution.report_title = ""
         outage.sales_affected_choice = self.dialog_data.get('sales_affected_choice')
-        outage.sales_affected = self.dialog_data.get('sales_affected')
+        outage.lost_bookings = lost_bookings
+        outage.impact_on_turnover = impact_on_turnover
         outage.save(modified_by=self.actor)
         solution.save(modified_by=self.actor)
 
