@@ -291,6 +291,12 @@ class OutageHistory(AbstractOutage):
         ordering = ['-pk']
 
 
+class PostmortemNotifications(models.Model):
+    slack_notified = models.BooleanField(default=False)
+    email_notified = models.BooleanField(default=False)
+    label_notified = models.BooleanField(default=False)
+
+
 class AbstractSolution(models.Model):
 
     class Meta:
@@ -318,8 +324,29 @@ class AbstractSolution(models.Model):
         return [c for k, c in self.OUTCOME_CHOICES if k == self.suggested_outcome][0]
 
 
+class SolutionManager(models.Manager):
+    def outcome_is_postmortem(self):
+        return self.filter(suggested_outcome=AbstractSolution.POSTMORTEM)
+
+
 class Solution(AbstractSolution):
+    objects = SolutionManager()
+
     outage = models.OneToOneField(Outage, on_delete=models.CASCADE)
+    postmortem_notifications = models.OneToOneField(
+        PostmortemNotifications, on_delete=models.CASCADE, null=True, blank=True)
+
+    @property
+    def postmortem_required(self):
+        return self.suggested_outcome == self.POSTMORTEM
+
+    def get_postmortem_notifications(self):
+        if self.postmortem_required:
+            try:
+                return self.postmortem_notifications
+            except PostmortemNotifications.DoesNotExist:
+                return None
+        return None
 
     def downtime(self):
         start = arrow.get(self.outage.started_at)
@@ -341,6 +368,8 @@ class Solution(AbstractSolution):
 
     def duration(self):
         downtime = self.downtime()
+        if not downtime:
+            return 0
         days = downtime.days
         seconds = downtime.seconds
         minutes, seconds = divmod(seconds, 60)
@@ -353,8 +382,9 @@ class Solution(AbstractSolution):
 
     @property
     def missing_postmortem(self):
-        if self.suggested_outcome == self.POSTMORTEM:
+        if self.postmortem_required:
             return not self.report_url
+        return False
 
     @property
     def full_report_url(self):

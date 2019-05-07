@@ -15,7 +15,7 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import FormParser
 from rest_framework.response import Response
 
-from ..core.models import Alert, Monitor, Outage, Profile, Solution
+from ..core.models import Alert, Monitor, Outage, PostmortemNotifications, Profile, Solution
 from ..core.utils import user_can_announnce, user_can_edit_all_outages, user_can_modify_outage
 from ..integration.gitlab import get_postmortem_title
 from .bot import slack_bot_client, slack_client
@@ -451,7 +451,10 @@ class InteractiveMesssageHandler():
         }
 
     def resolve(self):
-        Solution.objects.create(outage=self.outage, created_by=provision_slack_user(self.actor_id))
+        pn = PostmortemNotifications()
+        pn.save()
+        Solution.objects.create(outage=self.outage, created_by=provision_slack_user(self.actor_id),
+                                postmortem_notifications=pn)
         if not self.outage.sales_affected_choice == Outage.UNKNOWN:
             sales_affected = self.outage.sales_affected_choice
         else:
