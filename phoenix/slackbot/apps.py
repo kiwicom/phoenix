@@ -10,7 +10,7 @@ class SlackbotConfig(AppConfig):
     name = 'phoenix.slackbot'
 
     def ready(self):
-        import phoenix.slackbot.signals  # pylint: disable=unused-variable,bad-option-value
+        import phoenix.slackbot.signals  # pylint: disable=bad-option-value,unused-import
 
         from .tasks import (join_datadog_channels, notify_users, sync_user_groups_with_google,
                             notify_users_with_due_date_postmortems, generate_after_due_date_issues_report,

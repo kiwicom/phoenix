@@ -12,14 +12,15 @@ class UserChoiceField(ModelChoiceField):
 class OutageBaseForm(ModelForm):
     class Meta:
         model = Outage
-        fields = ['summary', 'systems_affected', 'sales_affected_choice', 'sales_affected', 'eta']
+        fields = ['summary', 'sales_affected_choice', 'lost_bookings', 'impact_on_turnover', 'systems_affected', 'eta']
         labels = {
-            'eta': "ETA in minutes. Leave empty if unknown."
+            'eta': "ETA in minutes. Leave empty if unknown.",
         }
 
 
 class OutageCreateForm(OutageBaseForm):
-    pass
+    class Meta(OutageBaseForm.Meta):
+        fields = OutageBaseForm.Meta.fields + ['announce_on_slack']
 
 
 class OutageUpdateForm(OutageBaseForm):

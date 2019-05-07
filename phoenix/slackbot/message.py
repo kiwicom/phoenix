@@ -114,7 +114,10 @@ class BaseMessage:
 
     def get_formatted_sales(self):
         """Return sales affected formatted for slack."""
-        return f"{self.outage.sales_affected_choice_human.capitalize()}. {self.outage.sales_affected.capitalize()}"
+        msg = f"{self.outage.sales_affected_choice_human.capitalize()}."
+        if self.outage.sales_affected:
+            msg += f" {self.outage.sales_affected}"
+        return msg
 
     def get_formatted_assigneess(self):
         """Return assignees formated for slack."""
@@ -127,7 +130,7 @@ class SolutionMessage(BaseMessage):
     def __init__(self, outage, announcement):
         super().__init__(outage, announcement)
         self.solution = outage.is_resolved
-        self.title = 'Resolved ' + self.title
+        self.title = self.solution.report_title if self.solution.report_title else 'Resolved ' + self.title
         self.color = 'good'
 
     def get_formatted_resolution(self):
