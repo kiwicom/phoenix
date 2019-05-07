@@ -48,8 +48,6 @@ class AbstractOutage(models.Model):
     )
 
     summary = models.TextField(null=False, blank=False, max_length=3000)
-    sales_affected_choice = models.CharField(choices=SALES_AFFECTED_CHOICES, max_length=2, default=UNKNOWN)
-    sales_affected = models.TextField(max_length=3000, null=True, blank=True)
     systems_affected = models.ManyToManyField(System)
     communication_assignee = models.ForeignKey(USER_MODEL, related_name='comunicate_outages', on_delete=models.CASCADE)
     solution_assignee = models.ForeignKey(USER_MODEL, related_name='solves_outages', on_delete=models.CASCADE)
@@ -57,6 +55,13 @@ class AbstractOutage(models.Model):
     created_by = models.ForeignKey(USER_MODEL, related_name='outage_created', on_delete=models.CASCADE)
     started_at = models.DateTimeField(default=timezone.now)
     announce_on_slack = models.BooleanField(default=True)
+
+    sales_affected_choice = models.CharField(choices=SALES_AFFECTED_CHOICES, max_length=2, default=UNKNOWN)
+    # Keeping field sales_affected for compatibility reasons. This field will also be filled with data from fields
+    # lost_bookings and impact_on_turnover.
+    sales_affected = models.TextField(max_length=3000, null=True, blank=True)
+    lost_bookings = models.IntegerField(null=True, blank=True)
+    impact_on_turnover = models.IntegerField(null=True, blank=True)
 
     # Never set ETA manually. Use helper methods "set_eta" and "real_eta"
     # for proper representation.
@@ -219,10 +224,16 @@ class Outage(AbstractOutage):
         """Check if user is linked to outage."""
         return user_id in self.get_involved_user_ids()
 
+    def fill_sales_affected(self):
+        self.sales_affected = f"{self.lost_bookings or 'N/A'} lost bookings, "\
+                              f"{self.impact_on_turnover or 'N/A'} EUR impact on turnover"
+
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
         change_desc = kwargs.pop('change_desc', None)
         modified_by = kwargs.pop('modified_by', None)
         self.summary = self.summary.strip()
+
+        self.fill_sales_affected()
 
         if self.pk is None:
             try:
@@ -240,6 +251,8 @@ class Outage(AbstractOutage):
             summary=self.summary,
             sales_affected_choice=self.sales_affected_choice,
             sales_affected=self.sales_affected,
+            lost_bookings=self.lost_bookings,
+            impact_on_turnover=self.impact_on_turnover,
             communication_assignee=self.communication_assignee,
             solution_assignee=self.solution_assignee,
             created=self.created,
@@ -278,6 +291,12 @@ class OutageHistory(AbstractOutage):
         ordering = ['-pk']
 
 
+class PostmortemNotifications(models.Model):
+    slack_notified = models.BooleanField(default=False)
+    email_notified = models.BooleanField(default=False)
+    label_notified = models.BooleanField(default=False)
+
+
 class AbstractSolution(models.Model):
 
     class Meta:
@@ -299,15 +318,35 @@ class AbstractSolution(models.Model):
     suggested_outcome = models.CharField(choices=OUTCOME_CHOICES, default=NONE, max_length=2)
     report_url = models.TextField(null=True, blank=True)
     report_title = models.TextField(null=True, blank=True)
-    sales_affected = models.TextField(max_length=3000, null=True, blank=True)
 
     @property
     def suggested_outcome_human(self):
         return [c for k, c in self.OUTCOME_CHOICES if k == self.suggested_outcome][0]
 
 
+class SolutionManager(models.Manager):
+    def outcome_is_postmortem(self):
+        return self.filter(suggested_outcome=AbstractSolution.POSTMORTEM)
+
+
 class Solution(AbstractSolution):
+    objects = SolutionManager()
+
     outage = models.OneToOneField(Outage, on_delete=models.CASCADE)
+    postmortem_notifications = models.OneToOneField(
+        PostmortemNotifications, on_delete=models.CASCADE, null=True, blank=True)
+
+    @property
+    def postmortem_required(self):
+        return self.suggested_outcome == self.POSTMORTEM
+
+    def get_postmortem_notifications(self):
+        if self.postmortem_required:
+            try:
+                return self.postmortem_notifications
+            except PostmortemNotifications.DoesNotExist:
+                return None
+        return None
 
     def downtime(self):
         start = arrow.get(self.outage.started_at)
@@ -329,6 +368,8 @@ class Solution(AbstractSolution):
 
     def duration(self):
         downtime = self.downtime()
+        if not downtime:
+            return 0, 0, 0, 0
         days = downtime.days
         seconds = downtime.seconds
         minutes, seconds = divmod(seconds, 60)
@@ -341,8 +382,9 @@ class Solution(AbstractSolution):
 
     @property
     def missing_postmortem(self):
-        if self.suggested_outcome == self.POSTMORTEM:
+        if self.postmortem_required:
             return not self.report_url
+        return False
 
     @property
     def full_report_url(self):
@@ -368,7 +410,6 @@ class Solution(AbstractSolution):
             solving_time=self.solving_time,
             suggested_outcome=self.suggested_outcome,
             report_url=self.report_url,
-            sales_affected=self.sales_affected,
         )
 
     class Meta:

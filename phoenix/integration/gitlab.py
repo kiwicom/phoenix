@@ -77,6 +77,13 @@ def get_postmortem_title(report_url):
     return issue.title
 
 
+def get_issue(project_slug, issue_id):
+    api = get_api()
+    if not api:
+        return None
+    return api.projects.get(project_slug).issues.get(issue_id)
+
+
 def get_due_date_issues(days=None):
     """List issues with specified days before due date."""
     if days:

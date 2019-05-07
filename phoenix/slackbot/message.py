@@ -116,7 +116,7 @@ class BaseMessage:
         """Return sales affected formatted for slack."""
         msg = f"{self.outage.sales_affected_choice_human.capitalize()}."
         if self.outage.sales_affected:
-            msg += f" {self.outage.sales_affected.capitalize()}"
+            msg += f" {self.outage.sales_affected}"
         return msg
 
     def get_formatted_assigneess(self):
