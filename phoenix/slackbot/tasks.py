@@ -718,14 +718,14 @@ def postmortem_slack_notify(solution):
 def postmortem_email_notify(solution):
     if solution.postmortem_notifications.email_notified:
         return
-    if not settings.POSTMORTEM_NOTIFICAION_EMAIL_ADDR:
+    if not settings.POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR:
         logger.warning("Postmortem recepients not specified. Skipping email report...")
         return
     announcement_url = solution.outage.announcement.permalink
     message = EmailMessage()
     message['Subject'] = "Phoenix: missing postmortem report"
     message['from'] = settings.POSTMORTEM_EMAIL_REPORT_FROM
-    message['to'] = settings.POSTMORTEM_EMAIL_REPORT_RECIPIENTS
+    message['to'] = settings.POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR
     message.set_content(f'Missing postmortem for this outage {announcement_url}')
     send_email(message)
     solution.postmortem_notifications.email_notified = True
@@ -747,14 +747,14 @@ def postmortem_label_notify(solution):
     if solution.postmortem_notifications.label_notified:
         return
     if is_postmortem_missing_label(solution):
-        if not settings.POSTMORTEM_NOTIFICAION_EMAIL_ADDR:
+        if not settings.POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR:
             logger.warning("Postmortem recepients not specified. Skipping email report...")
             return
         announcement_url = solution.outage.announcement.permalink
         message = EmailMessage()
         message['Subject'] = "Phoenix: postmortem report missing label"
         message['from'] = settings.POSTMORTEM_EMAIL_REPORT_FROM
-        message['to'] = settings.POSTMORTEM_EMAIL_REPORT_RECIPIENTS
+        message['to'] = settings.POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR
         message.set_content(f'Missing label "{settings.POSTMORTEM_LABEL}" in this postmortem report {announcement_url}')
         send_email(message)
         solution.postmortem_notifications.label_notified = True
