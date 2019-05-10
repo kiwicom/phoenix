@@ -663,7 +663,7 @@ def send_by_email(csv_report, text=None):
 
 
 def send_to_slack(csv_report, channel, comment=None):
-    data = slack_client.api_call(
+    data = slack_bot_client.api_call(
         "files.upload",
         channels=channel,
         file=csv_report,
