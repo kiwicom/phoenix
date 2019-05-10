@@ -15,6 +15,7 @@ from .forms import MonitorUpdate, OutageCreateForm, OutageUpdateForm, SolutionCr
 class OutagesList(ListView):
     model = Outage
     template_name = 'outages/outages_list.html'
+    paginate_by = 20
 
     def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
