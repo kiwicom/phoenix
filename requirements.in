@@ -1,5 +1,6 @@
 arrow
 celery
+colorama
 datadog
 django
 django-allauth

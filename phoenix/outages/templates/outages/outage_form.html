@@ -21,7 +21,7 @@
               {{ field }}
             </div>
           {% elif type == 'checkbox' %}
-              <div class="mdl-textfield input-field s12">
+              <div class="mdl-textfield input-field s12 custom-checkbox-field">
               <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="{{ field.name }}">
                   <span>{{ field.label }}</span>
                   <input type="{{ type }}" id="{{ field.name }}" name="{{ field.name }}" class="mdl-switch__input"

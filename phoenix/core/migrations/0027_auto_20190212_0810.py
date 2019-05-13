@@ -19,7 +19,7 @@ def migrate_systems_affected(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0022_auto_20181122_0952'),
+        ('core', '0026_auto_20190311_0952'),
     ]
 
     operations = [

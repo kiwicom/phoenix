@@ -47,21 +47,21 @@ You can create your own permission group setup using these permissions or you ca
 - `on_call` — uses the permission `Can add announcement`. Can be assigned to users automatically.
 - `edit_all_outages` — uses the permission `Can change outage`. Has to be assigned manually.
 
-### Authorization using Google Suite groups
+### Authorization using Google Suite groups (Optional)
 Phoenix has the ability to automatically update the `on_call` group. It will list specified groups in G Suite and add users from those groups to the Phoenix group `on_call`.
 
 **Setup:**
 - Create and configure `GOOGLE_SERVICE_ACCOUNT` ([see Google API](#google-api-optional)).
 - Specify groups that should be used for synchronizaition. Go to admin (e.g.: `localhost:8000/admin`)`Home > Integration > Google groups` and create entries for specific G Suite groups.
 
-### Due date notifications for Gitlab issues
+### Due date notifications for Gitlab issues (Optional)
 Phoenix supports custom notifications for the due dates of Gitlab issues. It can be configured to send notifications a certain number of days before the due date is reached. Phoenix will then notify the assignees of the issue via direct messages on Slack.
 
 **Setup:**
 - Create and configure GITLAB_PRIVATE_TOKEN ([see Gitlab API](#gitlab-api-optional))
 - Optionaly you can specify list of days to notify before due date using environment variable `GITLAB_POSTMORTEM_DAYS_TO_NOTIFY`. Default is [3,7], this means phoenix will send notifications 3 and 7 days before due date.
 
-### Monitoring notifications agregation
+### Monitoring notifications agregation (Optional)
 Phoenix has small feature for agregating notification data from monitoring. Currently it supports integrations with Pingdom (webhook) and Datadog (scrapping slack channels for notifications). There's simple list view in Web GUI under `Monitors`. Metabase can be easily used for data analysis.
 
 **Setup:**
@@ -148,6 +148,7 @@ Phoenix is able to retrieve configuration/secrets from environment variables. Th
 
 - `DEVEL_GOOGLE_OAUTH_CLIENT_ID` — optional setting used in the `init_devel_instance` command
 - `DEVEL_GOOGLE_OAUTH_SECRET` — optional setting used in the `init_devel_instance` command
+- `ALLOW_ALL_TO_NOTIFY` - allow everyone to announce outage
 
 ## Development setup
 

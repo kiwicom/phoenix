@@ -1,6 +1,7 @@
 import logging
 import time
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from .models import Outage
@@ -42,3 +43,8 @@ def user_can_edit_all_outages(user_id):
     except User.DoesNotExist:
         logger.error(f'User {user_id} does not exist')
     return user.has_perm('core.change_outage')
+
+
+def user_can_announnce(user):
+    """Check if user object can announce outage."""
+    return settings.ALLOW_ALL_TO_NOTIFY or user.has_perm('slackbot.add_announcement')
