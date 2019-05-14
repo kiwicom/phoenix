@@ -3,6 +3,18 @@
 from django.db import migrations
 
 
+def migrate_systems_affected(apps, schema_editor):
+    System = apps.get_model('core', 'System')
+    OutageHistory = apps.get_model('core', 'OutageHistory')
+    for system in System.objects.all():
+        for outage in system.outage_set.all():
+            outage.systems_affected = system
+            outage.save()
+            for outage_history in OutageHistory.objects.filter(outage_id=outage.id):
+                outage_history.systems_affected = system
+                outage_history.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,6 +22,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+         migrations.RunPython(migrate_systems_affected),
         migrations.RemoveField(
             model_name='outage',
             name='systems_affected_bck',
