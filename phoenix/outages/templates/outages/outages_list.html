@@ -23,12 +23,9 @@
                             <a href="{% url 'outage_detail' pk=outage.pk %}" class="kiwi-link">{{ outage.summary|truncatechars:50 }}</a>
                         </td>
                         <td class="mdl-data-table__cell--non-numeric">
-                            {% for system in outage.systems_affected.all %}
-                                <span class="mdl-chip">
-                                    <span class="mdl-chip__text">{{ system.name|truncatechars:30  }}</span>
-                                </span>
-                                <br>
-                            {% endfor %}
+                            <span class="mdl-chip">
+                                <span class="mdl-chip__text">{{ outage.systems_affected_human }}</span>
+                            </span>
                         </td>
                         <td class="mdl-data-table__cell--non-numeric">
                             <span class="mdl-chip">

@@ -43,18 +43,11 @@ def test_add_remove_affected_system():
     o = get_outage()
     new_system = System(name='test system')
     new_system.save()
-    affected_systems = o.systems_affected.all()
-    assert not affected_systems, 'No affected system should be assigned'
 
-    o.add_affected_system(new_system.id)
-    affected_systems = o.systems_affected.all()
-    assert len(affected_systems) == 1, 'Only one affected system should be '\
-                                       'assigned'
+    assert o.systems_affected.name == 'Unittest-system'
 
-    o.remove_affected_system(new_system.id)
-    affected_systems = o.systems_affected.all()
-    assert not affected_systems, 'No affected system should be assigned'\
-        'after removal'
+    o.set_system_affected(new_system.id)
+    assert o.systems_affected.name == new_system.name
 
 
 @pytest.mark.django_db

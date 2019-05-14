@@ -48,7 +48,7 @@ class AbstractOutage(models.Model):
     )
 
     summary = models.TextField(null=False, blank=False, max_length=3000)
-    systems_affected = models.ManyToManyField(System)
+    systems_affected = models.ForeignKey(System, null=True, related_name='systems_%(class)s', on_delete=models.CASCADE)
     communication_assignee = models.ForeignKey(USER_MODEL, related_name='comunicate_outages', on_delete=models.CASCADE)
     solution_assignee = models.ForeignKey(USER_MODEL, related_name='solves_outages', on_delete=models.CASCADE)
     created = models.DateTimeField(default=timezone.now)
@@ -81,7 +81,7 @@ class AbstractOutage(models.Model):
 
     @property
     def systems_affected_human(self):
-        return ', '.join([sys.name for sys in self.systems_affected.all()]) or 'N/A'
+        return self.systems_affected.name or 'N/A'
 
     @property
     def real_eta(self):
@@ -192,21 +192,12 @@ class Outage(AbstractOutage):
     def make_communication_assignee(self, user_last_name):
         self._make_assignee(user_last_name, column='communication_assignee')
 
-    def add_affected_system(self, system_id):
+    def set_system_affected(self, system_id):
         try:
-            self.systems_affected.add(system_id)
-            return True
-        except IntegrityError:
+            system = System.objects.get(id=system_id)
+        except System.DoesNotExist:
             return False
-
-    def remove_affected_system(self, system_id):
-        try:
-            if self.systems_affected.get(id=system_id):
-                self.systems_affected.remove(system_id)
-                return True
-        except models.ObjectDoesNotExist:
-            pass
-        return False
+        self.systems_affected = system
 
     def add_notification(self, text, by_user):
         self.notifications.create(text=text, created_by=by_user)
@@ -263,8 +254,8 @@ class Outage(AbstractOutage):
             change_desc=change_desc,
             modified_by=modified_by,
             started_at=self.started_at,
+            systems_affected=self.systems_affected,
         )
-        history.systems_affected.set(self.systems_affected.all())
         history.save()
 
     class Meta:

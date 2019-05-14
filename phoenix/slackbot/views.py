@@ -784,9 +784,9 @@ class DialogSubmissionHandler():
                         lost_bookings=lost_bookings,
                         impact_on_turnover=impact_on_turnover)
         outage.set_eta(eta)
+        affected_system = self.dialog_data.get('affected_system')
+        outage.set_system_affected(affected_system)
         outage.save()
-        added_system = self.dialog_data.get('affected_system')
-        outage.add_affected_system(added_system)
 
     def resolve(self):
         outage = Outage.objects.get(id=self.obj)
@@ -911,36 +911,6 @@ class DialogSubmissionHandler():
 
         outage.save(modified_by=self.actor)
         solution.save(modified_by=self.actor)
-
-    def addsystem(self):
-        outage = Outage.objects.get(id=self.obj)
-        added_system = self.dialog_data.get('affected_system')
-        success = outage.add_affected_system(added_system)
-        if not success:
-            data = {
-                'errors': [
-                    {
-                        'name': 'affected_system',
-                        'error': 'This system is already marked as affected.',
-                    }
-                ]
-            }
-            return Response(data=data, status=status.HTTP_200_OK)
-
-    def removesystem(self):
-        outage = Outage.objects.get(id=self.obj)
-        selected_system = self.dialog_data.get('affected_system')
-        success = outage.remove_affected_system(selected_system)
-        if not success:
-            data = {
-                'errors': [
-                    {
-                        'name': 'affected_system',
-                        'error': 'This system is can\'t be removed because it\'s not affected.',
-                    }
-                ]
-            }
-            return Response(data=data, status=status.HTTP_200_OK)
 
     def assignchannel(self):
         channel_id = self.dialog_data.get('channel')

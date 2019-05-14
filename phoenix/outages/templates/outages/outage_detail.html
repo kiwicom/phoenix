@@ -35,16 +35,10 @@
                 <label class="details-item-name">Started at</label>
                 <p class="details-item-value timestamp-transform">{{ object.started_at.timestamp }}</p>
         </div>
-        {% if object.systems_affected.all %}
-            <div class="details-item">
-                <label class="details-item-name">Systems affected</label>
-                <p class="details-item-value">
-                    {% for system in object.systems_affected.all %}
-                        {{ system.name }}
-                    {% endfor %}
-                </p>
-            </div>
-        {% endif %}
+        <div class="details-item">
+            <label class="details-item-name">Systems affected</label>
+            <p class="details-item-value">{{ object.systems_affected_human }}</p>
+        </div>
         <div class="details-item">
             <label class="details-item-name">Sales affected</label>
             <p class="details-item-value">{{ object.sales_affected_choice_human }}</p>
