@@ -4,18 +4,6 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
-def migrate_systems_affected(apps, schema_editor):
-    System = apps.get_model('core', 'System')
-    OutageHistory = apps.get_model('core', 'OutageHistory')
-    for system in System.objects.all():
-        for outage in system.outage_set.all():
-            outage.systems_affected = system
-            outage.save()
-            for outage_history in OutageHistory.objects.filter(outage_id=outage.id):
-                outage_history.systems_affected = system
-                outage_history.save()
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -43,5 +31,4 @@ class Migration(migrations.Migration):
             name='systems_affected',
             field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='systems_outagehistory', to='core.System'),
         ),
-        migrations.RunPython(migrate_systems_affected),
     ]
