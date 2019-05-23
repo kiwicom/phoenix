@@ -22,7 +22,7 @@ def get_open_issues():
     api = get_api()
     if not api:
         return None
-    return api.issues.list(state='opened')
+    return api.issues.list(all=True, state='opened')
 
 
 def postmortem_project():
@@ -37,7 +37,7 @@ def postmortem_project():
 
 def get_open_postmortems():
     project = postmortem_project()
-    return project.issues.list(state='opened')
+    return project.issues.list(all=True, state='opened')
 
 
 def parse_report_url(report_url):

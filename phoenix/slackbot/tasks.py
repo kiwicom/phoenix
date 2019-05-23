@@ -685,15 +685,18 @@ def generate_after_due_date_issues_report():
     else:
         reaction = f'Number of postmortems past their due date is {num_of_issues}'
     comment = f'New postmortem report is ready. {reaction}'
-    fieldnames = ('row', 'url', 'due date')
+    fieldnames = ('row', 'title', 'url', 'due date', 'author', 'assignees')
     with tempfile.TemporaryFile('r+') as fw:
         csv_fw = csv.DictWriter(fw, fieldnames=fieldnames)
         csv_fw.writeheader()
         for row, issue in enumerate(issues, 1):
             csv_fw.writerow({
                 fieldnames[0]: row,
-                fieldnames[1]: issue.web_url,
-                fieldnames[2]: issue.due_date,
+                fieldnames[1]: issue.title,
+                fieldnames[2]: issue.web_url,
+                fieldnames[3]: issue.due_date,
+                fieldnames[4]: issue.author['username'],
+                fieldnames[5]: ';'.join([a['username'] for a in issue.assignees]),
             })
         fw.seek(0)
         send_to_slack(fw, settings.SLACK_POSTMORTEM_REPORT_CHANNEL,
