@@ -18,11 +18,11 @@ class PhoenixSlackClient:
         resp = self._slack_client.api_call(*args, **kwargs)
 
         # if call fails, log error response
-        if not resp['ok']:
-            method = kwargs.get('method')
+        if not resp["ok"]:
+            method = kwargs.get("method")
             if not method:
                 method = args[0]
-            logger.error(f'Api call {method} failed. Reason: {resp}')
+            logger.error(f"Api call {method} failed. Reason: {resp}")
 
         return resp
 

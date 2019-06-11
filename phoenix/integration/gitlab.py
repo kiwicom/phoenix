@@ -11,9 +11,11 @@ logger = logging.getLogger(__name__)
 
 def get_api():
     if settings.GITLAB_URL and settings.GITLAB_PRIVATE_TOKEN:
-        return gitlab.Gitlab(settings.GITLAB_URL, private_token=settings.GITLAB_PRIVATE_TOKEN)
+        return gitlab.Gitlab(
+            settings.GITLAB_URL, private_token=settings.GITLAB_PRIVATE_TOKEN
+        )
 
-    logger.warning('Skipping gitlab features...')
+    logger.warning("Skipping gitlab features...")
     return None
 
 
@@ -22,7 +24,7 @@ def get_open_issues():
     api = get_api()
     if not api:
         return None
-    return api.issues.list(all=True, state='opened')
+    return api.issues.list(all=True, state="opened")
 
 
 def postmortem_project():
@@ -37,19 +39,21 @@ def postmortem_project():
 
 def get_open_postmortems():
     project = postmortem_project()
-    return project.issues.list(all=True, state='opened')
+    return project.issues.list(all=True, state="opened")
 
 
 def parse_report_url(report_url):
     """Parse report url, return project path and issue ID."""
     path = urlparse(report_url).path
-    groups = re.match(r'/(?P<group>\w+)/(?P<project>\w+)/issues/(?P<issue_id>\d+)', path)
+    groups = re.match(
+        r"/(?P<group>\w+)/(?P<project>\w+)/issues/(?P<issue_id>\d+)", path
+    )
     if not groups:
         logger.error(f"Report url wrong format: {report_url}")
         logger.debug(f"URL path: {path}")
         return False, False
     project_path = f"{groups['group']}/{groups['project']}"
-    return project_path, groups['issue_id']
+    return project_path, groups["issue_id"]
 
 
 def get_postmortem_project(api, project_path):
@@ -87,7 +91,7 @@ def get_issue(project_slug, issue_id):
 def get_due_date_issues(days=None):
     """List issues with specified days before due date."""
     if days:
-        days = list(map(int, days.split(',')))
+        days = list(map(int, days.split(",")))
     else:
         days = settings.GITLAB_POSTMORTEM_DAYS_TO_NOTIFY
     days = sorted(days, reverse=True)

@@ -40,13 +40,13 @@ class OpenSignupSocialAccountAdapter(DefaultSocialAccountAdapter):
         raising an ImmediateHttpResponse
         """
         if settings.ALLOWED_EMAIL_DOMAIN:
-            domain = f'@{settings.ALLOWED_EMAIL_DOMAIN}'
+            domain = f"@{settings.ALLOWED_EMAIL_DOMAIN}"
 
-            email = sociallogin.account.extra_data['email']
-            logger.info('Trying social sign up: %s', email)
+            email = sociallogin.account.extra_data["email"]
+            logger.info("Trying social sign up: %s", email)
 
             if not email.endswith(domain):
-                msg = f'Email must be from {domain} domain!'
+                msg = f"Email must be from {domain} domain!"
                 logger.info(msg)
                 messages.error(request, msg)
                 raise ImmediateHttpResponse(redirect(settings.LOGIN_REDIRECT_URL))
@@ -57,16 +57,18 @@ def lookup(self):  # Ignore RadonBear
     assert not self.is_existing
     try:
         try:
-            a = SocialAccount.objects.get(provider=self.account.provider,
-                                          uid=self.account.uid)
+            a = SocialAccount.objects.get(
+                provider=self.account.provider, uid=self.account.uid
+            )
         except:
             a = None
 
         if a is None:
             try:
                 user = get_user_model().objects.get(email=self.user.email)
-                a = SocialAccount.objects.create(provider=self.account.provider, user=user,
-                                                 uid=self.account.uid)
+                a = SocialAccount.objects.create(
+                    provider=self.account.provider, user=user, uid=self.account.uid
+                )
             except:
                 return
         # Update account
@@ -79,8 +81,7 @@ def lookup(self):  # Ignore RadonBear
         if app_settings.STORE_TOKENS and self.token:
             assert not self.token.pk
             try:
-                t = SocialToken.objects.get(account=self.account,
-                                            app=self.token.app)
+                t = SocialToken.objects.get(account=self.account, app=self.token.app)
                 t.token = self.token.token
                 if self.token.token_secret:
                     # only update the refresh token if we got one

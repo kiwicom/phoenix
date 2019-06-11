@@ -3,12 +3,13 @@
 from django.db import migrations, models
 import django.utils.timezone
 
+
 def fix_outage_started_at(apps, schema_editor):
-    Outage = apps.get_model('core', 'Outage')
+    Outage = apps.get_model("core", "Outage")
     for outage in Outage.objects.all():
         outage.started_at = outage.created
         outage.save()
-    OutageHistory = apps.get_model('core', 'OutageHistory')
+    OutageHistory = apps.get_model("core", "OutageHistory")
     for outage in OutageHistory.objects.all():
         outage.started_at = outage.created
         outage.save()
@@ -16,19 +17,17 @@ def fix_outage_started_at(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0016_auto_20180814_0602'),
-    ]
+    dependencies = [("core", "0016_auto_20180814_0602")]
 
     operations = [
         migrations.AddField(
-            model_name='outage',
-            name='started_at',
+            model_name="outage",
+            name="started_at",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AddField(
-            model_name='outagehistory',
-            name='started_at',
+            model_name="outagehistory",
+            name="started_at",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.RunPython(fix_outage_started_at),

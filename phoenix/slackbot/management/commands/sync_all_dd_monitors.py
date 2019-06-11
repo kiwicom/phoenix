@@ -12,9 +12,6 @@ class Command(BaseCommand):
     help = 'Sync all datadog monitors missing "creator" and "name" informations.'
 
     def handle(self, *args, **options):
-        monitors = Monitor.objects.filter(
-            name=None,
-            monitoring_system=Monitor.DATADOG,
-        )
+        monitors = Monitor.objects.filter(name=None, monitoring_system=Monitor.DATADOG)
         for monitor in monitors:
             sync_monitor_details(monitor)

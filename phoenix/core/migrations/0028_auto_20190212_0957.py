@@ -4,8 +4,8 @@ from django.db import migrations
 
 
 def migrate_systems_affected(apps, schema_editor):
-    System = apps.get_model('core', 'System')
-    OutageHistory = apps.get_model('core', 'OutageHistory')
+    System = apps.get_model("core", "System")
+    OutageHistory = apps.get_model("core", "OutageHistory")
     for system in System.objects.all():
         for outage in system.outage_set.all():
             outage.systems_affected = system
@@ -17,18 +17,10 @@ def migrate_systems_affected(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0027_auto_20190212_0810'),
-    ]
+    dependencies = [("core", "0027_auto_20190212_0810")]
 
     operations = [
-         migrations.RunPython(migrate_systems_affected),
-        migrations.RemoveField(
-            model_name='outage',
-            name='systems_affected_bck',
-        ),
-        migrations.RemoveField(
-            model_name='outagehistory',
-            name='systems_affected_bck',
-        ),
+        migrations.RunPython(migrate_systems_affected),
+        migrations.RemoveField(model_name="outage", name="systems_affected_bck"),
+        migrations.RemoveField(model_name="outagehistory", name="systems_affected_bck"),
     ]

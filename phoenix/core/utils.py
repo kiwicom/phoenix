@@ -14,7 +14,7 @@ def execution_time_logger(fun):
         start = time.time()
         result = fun(*args, **kwargs)
         end = time.time()
-        logger.debug(f'Execution {fun.__name__}: {end-start}')
+        logger.debug(f"Execution {fun.__name__}: {end-start}")
         return result
 
     return wrapper
@@ -31,7 +31,9 @@ def user_can_modify_outage(user_id, outage_id, allow_resolved=False):
 
     allow_edit_resolved = allow_resolved if allow_resolved else not outage.is_resolved
 
-    if user_can_edit_all_outages(user_id) or (outage.can_edit_outage(user_id) and allow_edit_resolved):
+    if user_can_edit_all_outages(user_id) or (
+        outage.can_edit_outage(user_id) and allow_edit_resolved
+    ):
         return True
     return False
 
@@ -41,10 +43,10 @@ def user_can_edit_all_outages(user_id):
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
-        logger.error(f'User {user_id} does not exist')
-    return user.has_perm('core.change_outage')
+        logger.error(f"User {user_id} does not exist")
+    return user.has_perm("core.change_outage")
 
 
 def user_can_announnce(user):
     """Check if user object can announce outage."""
-    return settings.ALLOW_ALL_TO_NOTIFY or user.has_perm('slackbot.add_announcement')
+    return settings.ALLOW_ALL_TO_NOTIFY or user.has_perm("slackbot.add_announcement")

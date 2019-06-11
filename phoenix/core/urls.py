@@ -19,11 +19,11 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 urlpatterns = [
-    path('', RedirectView.as_view(pattern_name='outages_list')),
-    path('slack/', include('phoenix.slackbot.urls')),
-    path('admin/', admin.site.urls),
-    url(r'^admin/statuscheck/', include('celerybeat_status.urls')),
-    path('accounts/', include('allauth.urls')),
-    path('outages/', include('phoenix.outages.urls')),
-    path('integration/', include('phoenix.integration.urls')),
+    path("", RedirectView.as_view(pattern_name="outages_list")),
+    path("slack/", include("phoenix.slackbot.urls")),
+    path("admin/", admin.site.urls),
+    url(r"^admin/statuscheck/", include("celerybeat_status.urls")),
+    path("accounts/", include("allauth.urls")),
+    path("outages/", include("phoenix.outages.urls")),
+    path("integration/", include("phoenix.integration.urls")),
 ]

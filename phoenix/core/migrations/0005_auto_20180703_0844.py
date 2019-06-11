@@ -10,56 +10,89 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('core', '0004_auto_20180627_1208'),
+        ("core", "0004_auto_20180627_1208"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MonitorHistory',
+            name="MonitorHistory",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(default=django.utils.timezone.now)),
-                ('link', models.CharField(max_length=200)),
-                ('severity', models.CharField(choices=[('UN', 'undefined'), ('LO', 'low'), ('ME', 'medium'), ('HI', 'high')], default='UN', max_length=2)),
-                ('description', models.TextField(blank=True, max_length=3000, null=True)),
-                ('created_by', models.CharField(blank=True, max_length=200, null=True)),
-                ('name', models.CharField(blank=True, max_length=300, null=True)),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('external_id', models.CharField(max_length=100)),
-                ('modified_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(default=django.utils.timezone.now)),
+                ("link", models.CharField(max_length=200)),
+                (
+                    "severity",
+                    models.CharField(
+                        choices=[
+                            ("UN", "undefined"),
+                            ("LO", "low"),
+                            ("ME", "medium"),
+                            ("HI", "high"),
+                        ],
+                        default="UN",
+                        max_length=2,
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(blank=True, max_length=3000, null=True),
+                ),
+                ("created_by", models.CharField(blank=True, max_length=200, null=True)),
+                ("name", models.CharField(blank=True, max_length=300, null=True)),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                ("external_id", models.CharField(max_length=100)),
+                (
+                    "modified_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
-            options={
-                'abstract': False,
-            },
+            options={"abstract": False},
         ),
         migrations.RenameField(
-            model_name='monitor',
-            old_name='datadog_id',
-            new_name='external_id',
+            model_name="monitor", old_name="datadog_id", new_name="external_id"
         ),
         migrations.AddField(
-            model_name='monitor',
-            name='created_by',
+            model_name="monitor",
+            name="created_by",
             field=models.CharField(blank=True, max_length=200, null=True),
         ),
         migrations.AddField(
-            model_name='monitor',
-            name='description',
+            model_name="monitor",
+            name="description",
             field=models.TextField(blank=True, max_length=3000, null=True),
         ),
         migrations.AddField(
-            model_name='monitor',
-            name='name',
+            model_name="monitor",
+            name="name",
             field=models.CharField(blank=True, max_length=300, null=True),
         ),
         migrations.AlterField(
-            model_name='monitor',
-            name='created',
+            model_name="monitor",
+            name="created",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AddField(
-            model_name='monitorhistory',
-            name='monitor',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='history', to='core.Monitor'),
+            model_name="monitorhistory",
+            name="monitor",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="history",
+                to="core.Monitor",
+            ),
         ),
     ]
