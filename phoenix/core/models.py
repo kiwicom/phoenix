@@ -15,48 +15,54 @@ USER_MODEL = settings.AUTH_USER_MODEL
 
 class Profile(models.Model):
     user = models.OneToOneField(USER_MODEL, on_delete=models.CASCADE)
-    timezone = models.TextField(null=False, default='Etc/UTC')
+    timezone = models.TextField(null=False, default="Etc/UTC")
     image_48_url = models.TextField(null=True, blank=True)
     slack_username = models.CharField(null=True, blank=True, max_length=150)
 
     def __str__(self):
-        return f'Profile {self.id} for User {self.user.id}'
+        return f"Profile {self.id} for User {self.user.id}"
 
     @property
     def slack_link(self):
-        return f'https://skypicker.slack.com/team/{self.user.last_name}'
+        return f"https://skypicker.slack.com/team/{self.user.last_name}"
 
 
 class System(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
-        return f'{self.name}'
+        return f"{self.name}"
 
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
 
 
 class AbstractOutage(models.Model):
-    YES = 'Y'
-    NO = 'N'
-    UNKNOWN = 'UN'
-    SALES_AFFECTED_CHOICES = (
-        (YES, 'yes'),
-        (NO, 'no'),
-        (UNKNOWN, 'unknown'),
-    )
+    YES = "Y"
+    NO = "N"
+    UNKNOWN = "UN"
+    SALES_AFFECTED_CHOICES = ((YES, "yes"), (NO, "no"), (UNKNOWN, "unknown"))
 
     summary = models.TextField(null=False, blank=False, max_length=3000)
-    systems_affected = models.ForeignKey(System, null=True, related_name='systems_%(class)s', on_delete=models.CASCADE)
-    communication_assignee = models.ForeignKey(USER_MODEL, related_name='comunicate_outages', on_delete=models.CASCADE)
-    solution_assignee = models.ForeignKey(USER_MODEL, related_name='solves_outages', on_delete=models.CASCADE)
+    systems_affected = models.ForeignKey(
+        System, null=True, related_name="systems_%(class)s", on_delete=models.CASCADE
+    )
+    communication_assignee = models.ForeignKey(
+        USER_MODEL, related_name="comunicate_outages", on_delete=models.CASCADE
+    )
+    solution_assignee = models.ForeignKey(
+        USER_MODEL, related_name="solves_outages", on_delete=models.CASCADE
+    )
     created = models.DateTimeField(default=timezone.now)
-    created_by = models.ForeignKey(USER_MODEL, related_name='outage_created', on_delete=models.CASCADE)
+    created_by = models.ForeignKey(
+        USER_MODEL, related_name="outage_created", on_delete=models.CASCADE
+    )
     started_at = models.DateTimeField(default=timezone.now)
     announce_on_slack = models.BooleanField(default=True)
 
-    sales_affected_choice = models.CharField(choices=SALES_AFFECTED_CHOICES, max_length=2, default=UNKNOWN)
+    sales_affected_choice = models.CharField(
+        choices=SALES_AFFECTED_CHOICES, max_length=2, default=UNKNOWN
+    )
     # Keeping field sales_affected for compatibility reasons. This field will also be filled with data from fields
     # lost_bookings and impact_on_turnover.
     sales_affected = models.TextField(max_length=3000, null=True, blank=True)
@@ -77,11 +83,15 @@ class AbstractOutage(models.Model):
 
     @property
     def sales_affected_choice_human(self):
-        return [s[1] for s in self.SALES_AFFECTED_CHOICES if s[0] == self.sales_affected_choice][0]
+        return [
+            s[1]
+            for s in self.SALES_AFFECTED_CHOICES
+            if s[0] == self.sales_affected_choice
+        ][0]
 
     @property
     def systems_affected_human(self):
-        return self.systems_affected.name or 'N/A'
+        return self.systems_affected.name or "N/A"
 
     @property
     def real_eta(self):
@@ -123,7 +133,7 @@ class AbstractOutage(models.Model):
     def eta_remaining(self):
         """Calculate remaining ETA from now in minutes."""
         if self.eta_is_unknown:
-            return ''
+            return ""
         deadline = self.eta_human_deadline
         if deadline < timezone.now():
             return 0
@@ -138,9 +148,8 @@ class AbstractOutage(models.Model):
 
 
 class Outage(AbstractOutage):
-
     def __str__(self):
-        return f'Outage {self.id}'
+        return f"Outage {self.id}"
 
     @property
     def is_resolved(self):
@@ -176,7 +185,7 @@ class Outage(AbstractOutage):
         self.eta_last_modified = timezone.now()
         self.eta = eta
 
-    def _make_assignee(self, user_last_name, column='solution_assignee'):
+    def _make_assignee(self, user_last_name, column="solution_assignee"):
         if not user_last_name:
             return
         try:
@@ -190,7 +199,7 @@ class Outage(AbstractOutage):
         self._make_assignee(user_last_name)
 
     def make_communication_assignee(self, user_last_name):
-        self._make_assignee(user_last_name, column='communication_assignee')
+        self._make_assignee(user_last_name, column="communication_assignee")
 
     def set_system_affected(self, system_id):
         try:
@@ -216,12 +225,14 @@ class Outage(AbstractOutage):
         return user_id in self.get_involved_user_ids()
 
     def fill_sales_affected(self):
-        self.sales_affected = f"{self.lost_bookings or 'N/A'} lost bookings, "\
-                              f"{self.impact_on_turnover or 'N/A'} EUR impact on turnover"
+        self.sales_affected = (
+            f"{self.lost_bookings or 'N/A'} lost bookings, "
+            f"{self.impact_on_turnover or 'N/A'} EUR impact on turnover"
+        )
 
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        change_desc = kwargs.pop('change_desc', None)
-        modified_by = kwargs.pop('modified_by', None)
+        change_desc = kwargs.pop("change_desc", None)
+        modified_by = kwargs.pop("modified_by", None)
         self.summary = self.summary.strip()
 
         self.fill_sales_affected()
@@ -259,27 +270,41 @@ class Outage(AbstractOutage):
         history.save()
 
     class Meta:
-        ordering = ['-pk']
+        ordering = ["-pk"]
 
 
 class OutageHistory(AbstractOutage):
-    modified_by = models.ForeignKey(USER_MODEL, null=True, blank=True, on_delete=models.CASCADE)
-    outage = models.ForeignKey(Outage, related_name='history_outage', on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(
+        USER_MODEL, null=True, blank=True, on_delete=models.CASCADE
+    )
+    outage = models.ForeignKey(
+        Outage, related_name="history_outage", on_delete=models.CASCADE
+    )
     change_desc = models.TextField(null=True, blank=True, max_length=3000)
     timestamp = models.DateTimeField(auto_now_add=True)
     # name colisions
-    created_by = models.ForeignKey(USER_MODEL, related_name='history_outage_created', on_delete=models.CASCADE)
-    resolved_by = models.ForeignKey(USER_MODEL, related_name='history_outage_resolved', on_delete=models.CASCADE,
-                                    null=True, blank=True)
-    communication_assignee = models.ForeignKey(USER_MODEL, related_name='history_comunicate_outages',
-                                               on_delete=models.CASCADE)
-    solution_assignee = models.ForeignKey(USER_MODEL, related_name='history_solves_outages', on_delete=models.CASCADE)
+    created_by = models.ForeignKey(
+        USER_MODEL, related_name="history_outage_created", on_delete=models.CASCADE
+    )
+    resolved_by = models.ForeignKey(
+        USER_MODEL,
+        related_name="history_outage_resolved",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    communication_assignee = models.ForeignKey(
+        USER_MODEL, related_name="history_comunicate_outages", on_delete=models.CASCADE
+    )
+    solution_assignee = models.ForeignKey(
+        USER_MODEL, related_name="history_solves_outages", on_delete=models.CASCADE
+    )
 
     def __str__(self):
-        return f'History Outage {self.id} for Outage {self.outage.id}'
+        return f"History Outage {self.id} for Outage {self.outage.id}"
 
     class Meta:
-        ordering = ['-pk']
+        ordering = ["-pk"]
 
 
 class PostmortemNotifications(models.Model):
@@ -289,24 +314,27 @@ class PostmortemNotifications(models.Model):
 
 
 class AbstractSolution(models.Model):
-
     class Meta:
         abstract = True
 
-    POSTMORTEM = 'PM'
-    NONE = 'NO'
-    OUTCOME_CHOICES = (
-        (POSTMORTEM, 'Postmortem report'),
-        (NONE, 'None'),
-    )
+    POSTMORTEM = "PM"
+    NONE = "NO"
+    OUTCOME_CHOICES = ((POSTMORTEM, "Postmortem report"), (NONE, "None"))
 
     created = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(USER_MODEL, related_name='solution_created', on_delete=models.CASCADE, null=True,
-                                   blank=True)
+    created_by = models.ForeignKey(
+        USER_MODEL,
+        related_name="solution_created",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
     summary = models.TextField(max_length=3000, null=True, blank=True)
     resolved_at = models.DateTimeField(default=timezone.now)
     solving_time = models.IntegerField(default=0)
-    suggested_outcome = models.CharField(choices=OUTCOME_CHOICES, default=NONE, max_length=2)
+    suggested_outcome = models.CharField(
+        choices=OUTCOME_CHOICES, default=NONE, max_length=2
+    )
     report_url = models.TextField(null=True, blank=True)
     report_title = models.TextField(null=True, blank=True)
 
@@ -325,7 +353,8 @@ class Solution(AbstractSolution):
 
     outage = models.OneToOneField(Outage, on_delete=models.CASCADE)
     postmortem_notifications = models.OneToOneField(
-        PostmortemNotifications, on_delete=models.CASCADE, null=True, blank=True)
+        PostmortemNotifications, on_delete=models.CASCADE, null=True, blank=True
+    )
 
     @property
     def postmortem_required(self):
@@ -379,15 +408,15 @@ class Solution(AbstractSolution):
 
     @property
     def full_report_url(self):
-        if self.report_url and not self.report_url.startswith('http'):
-            return f'https://{self.report_url}'
+        if self.report_url and not self.report_url.startswith("http"):
+            return f"https://{self.report_url}"
         return self.report_url
 
     def __str__(self):
-        return f'Solution {self.pk}'
+        return f"Solution {self.pk}"
 
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        modified_by = kwargs.pop('modified_by', None)
+        modified_by = kwargs.pop("modified_by", None)
         if self.summary:
             self.summary = self.summary.strip()
         super().save(*args, **kwargs)
@@ -404,63 +433,77 @@ class Solution(AbstractSolution):
         )
 
     class Meta:
-        ordering = ['-pk']
+        ordering = ["-pk"]
 
 
 class SolutionHistory(AbstractSolution):
-    modified_by = models.ForeignKey(USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    modified_by = models.ForeignKey(
+        USER_MODEL, on_delete=models.CASCADE, null=True, blank=True
+    )
     # name clashes
-    created_by = models.ForeignKey(USER_MODEL, related_name='history_solution_created',
-                                   on_delete=models.CASCADE, null=True, blank=True)
-    solution = models.ForeignKey(Solution, related_name='solution_history',
-                                 on_delete=models.CASCADE)
+    created_by = models.ForeignKey(
+        USER_MODEL,
+        related_name="history_solution_created",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    solution = models.ForeignKey(
+        Solution, related_name="solution_history", on_delete=models.CASCADE
+    )
 
     class Meta:
-        ordering = ['-pk']
+        ordering = ["-pk"]
 
 
 class Notification(models.Model):
     created = models.DateTimeField(default=timezone.now)
     text = models.TextField(null=False, blank=False)
-    outage = models.ForeignKey(Outage, related_name='notifications', on_delete=models.CASCADE)
-    created_by = models.ForeignKey(USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    outage = models.ForeignKey(
+        Outage, related_name="notifications", on_delete=models.CASCADE
+    )
+    created_by = models.ForeignKey(
+        USER_MODEL, on_delete=models.CASCADE, null=True, blank=True
+    )
 
     def __str__(self):
-        return f'Notification {self.id} for Outage {self.outage.id}'
+        return f"Notification {self.id} for Outage {self.outage.id}"
 
     class Meta:
-        ordering = ['-pk']
+        ordering = ["-pk"]
 
 
 class AbstractMonitor(models.Model):
-    LOW = 'LO'
-    MEDIUM = 'ME'
-    HIGH = 'HI'
-    UNDEFINED = 'UN'
+    LOW = "LO"
+    MEDIUM = "ME"
+    HIGH = "HI"
+    UNDEFINED = "UN"
 
     SEVERITY_CHOICES = (
-        (UNDEFINED, 'undefined'),
-        (LOW, 'low'),
-        (MEDIUM, 'medium'),
-        (HIGH, 'high'),
+        (UNDEFINED, "undefined"),
+        (LOW, "low"),
+        (MEDIUM, "medium"),
+        (HIGH, "high"),
     )
 
-    DATADOG = 'DD'
-    PINGDOM = 'PD'
+    DATADOG = "DD"
+    PINGDOM = "PD"
 
     MONITORING_SYSTEM_CHOICES = (
-        (UNDEFINED, 'Undefined'),
-        (DATADOG, 'Datadog'),
-        (PINGDOM, 'Pingdom'),
+        (UNDEFINED, "Undefined"),
+        (DATADOG, "Datadog"),
+        (PINGDOM, "Pingdom"),
     )
 
-    monitoring_system = models.CharField(max_length=2,
-                                         choices=MONITORING_SYSTEM_CHOICES,
-                                         default=UNDEFINED)
+    monitoring_system = models.CharField(
+        max_length=2, choices=MONITORING_SYSTEM_CHOICES, default=UNDEFINED
+    )
     external_id = models.CharField(blank=False, null=False, max_length=100)
     created = models.DateTimeField(default=timezone.now)
     link = models.CharField(max_length=200)
-    severity = models.CharField(choices=SEVERITY_CHOICES, default=UNDEFINED, max_length=2)
+    severity = models.CharField(
+        choices=SEVERITY_CHOICES, default=UNDEFINED, max_length=2
+    )
     description = models.TextField(blank=True, null=True, max_length=3000)
     created_by = models.CharField(blank=True, null=True, max_length=200)
     name = models.CharField(blank=True, null=True, max_length=300)
@@ -478,15 +521,15 @@ class AbstractMonitor(models.Model):
             alert = Alert(monitor=self, alert_type=alert_type, ts=alert_ts)
             alert.save()
         except IntegrityError:
-            logger.info(f'{alert} already exists!')
+            logger.info(f"{alert} already exists!")
 
 
 class Monitor(AbstractMonitor):
     class Meta:
-        unique_together = ('monitoring_system', 'external_id')
+        unique_together = ("monitoring_system", "external_id")
 
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        modified_by = kwargs.pop('modified_by', None)
+        modified_by = kwargs.pop("modified_by", None)
 
         super().save(*args, **kwargs)
 
@@ -510,30 +553,36 @@ class Monitor(AbstractMonitor):
 
 
 class MonitorHistory(AbstractMonitor):
-    modified_by = models.ForeignKey(USER_MODEL, blank=True, null=True, on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(
+        USER_MODEL, blank=True, null=True, on_delete=models.CASCADE
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
-    monitor = models.ForeignKey(Monitor, blank=True, null=True, related_name='history', on_delete=models.CASCADE)
+    monitor = models.ForeignKey(
+        Monitor, blank=True, null=True, related_name="history", on_delete=models.CASCADE
+    )
     external_id = models.CharField(blank=False, null=False, max_length=100)
 
 
 class Alert(models.Model):
-    UNDEFINED = 'UN'
-    WARNING = 'WA'
-    CRITICAL = 'CR'
+    UNDEFINED = "UN"
+    WARNING = "WA"
+    CRITICAL = "CR"
 
     TYPE_CHOICES = (
-        (UNDEFINED, 'undefined'),
-        (WARNING, 'warning'),
-        (CRITICAL, 'critical'),
+        (UNDEFINED, "undefined"),
+        (WARNING, "warning"),
+        (CRITICAL, "critical"),
     )
 
     created = models.DateTimeField(auto_now_add=True)
     monitor = models.ForeignKey(Monitor, on_delete=models.CASCADE)
     ts = models.DateTimeField(null=True, default=None)
-    alert_type = models.CharField(blank=False, null=False, choices=TYPE_CHOICES, default=UNDEFINED, max_length=2)
+    alert_type = models.CharField(
+        blank=False, null=False, choices=TYPE_CHOICES, default=UNDEFINED, max_length=2
+    )
 
     class Meta:
-        unique_together = ('monitor', 'ts')
+        unique_together = ("monitor", "ts")
 
     def __str__(self):
-        return f'Alert monitor={self.monitor.external_id} ts={self.ts}'
+        return f"Alert monitor={self.monitor.external_id} ts={self.ts}"

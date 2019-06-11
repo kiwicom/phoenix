@@ -5,19 +5,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0023_auto_20190202_1935'),
-    ]
+    dependencies = [("core", "0023_auto_20190202_1935")]
 
     operations = [
         migrations.AddField(
-            model_name='outage',
-            name='announce_on_slack',
+            model_name="outage",
+            name="announce_on_slack",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='outagehistory',
-            name='announce_on_slack',
+            model_name="outagehistory",
+            name="announce_on_slack",
             field=models.BooleanField(default=True),
         ),
     ]

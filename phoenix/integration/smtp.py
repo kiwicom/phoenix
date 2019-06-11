@@ -14,6 +14,11 @@ def get_smtp(host, port, user, passwd, use_ssl=True):
 
 def send_email(message):
     """Helper function for sending email."""
-    with get_smtp(settings.SMTP_HOST, settings.SMTP_PORT, settings.SMTP_USER, settings.SMTP_PASSWORD,
-                  settings.SMTP_SSL) as smtp:
+    with get_smtp(
+        settings.SMTP_HOST,
+        settings.SMTP_PORT,
+        settings.SMTP_USER,
+        settings.SMTP_PASSWORD,
+        settings.SMTP_SSL,
+    ) as smtp:
         smtp.send_message(message)

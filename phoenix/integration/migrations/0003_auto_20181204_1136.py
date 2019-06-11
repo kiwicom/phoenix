@@ -5,14 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('integration', '0002_auto_20180802_1301'),
-    ]
+    dependencies = [("integration", "0002_auto_20180802_1301")]
 
     operations = [
         migrations.AlterField(
-            model_name='googlegroup',
-            name='is_allowed',
+            model_name="googlegroup",
+            name="is_allowed",
             field=models.BooleanField(blank=True, default=True),
-        ),
+        )
     ]

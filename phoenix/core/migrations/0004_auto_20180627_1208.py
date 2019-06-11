@@ -2,8 +2,9 @@
 
 from django.db import migrations, models
 
+
 def fix_ts(apps, schema_editor):
-    Alert = apps.get_model('core', 'Alert')
+    Alert = apps.get_model("core", "Alert")
     for alert in Alert.objects.all():
         if alert.ts is None:
             alert.ts = alert.created
@@ -12,19 +13,16 @@ def fix_ts(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0003_auto_20180626_0954'),
-    ]
+    dependencies = [("core", "0003_auto_20180626_0954")]
 
     operations = [
         migrations.AddField(
-            model_name='alert',
-            name='ts',
+            model_name="alert",
+            name="ts",
             field=models.DateTimeField(default=None, null=True),
         ),
         migrations.RunPython(fix_ts),
         migrations.AlterUniqueTogether(
-            name='alert',
-            unique_together={('monitor', 'ts')},
+            name="alert", unique_together={("monitor", "ts")}
         ),
     ]

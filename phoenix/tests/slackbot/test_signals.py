@@ -8,7 +8,7 @@ from phoenix.tests.utils import get_outage
 
 
 @pytest.mark.django_db
-@patch('phoenix.slackbot.signals.create_or_update_announcement.delay')
+@patch("phoenix.slackbot.signals.create_or_update_announcement.delay")
 def test_outage_changed(mocked_delay):
     outage = get_outage()
     try:
@@ -23,14 +23,14 @@ def test_outage_changed(mocked_delay):
 
 
 @pytest.mark.django_db
-@patch('phoenix.slackbot.signals.create_or_update_announcement.delay')
+@patch("phoenix.slackbot.signals.create_or_update_announcement.delay")
 def test_outage_systems_changed(mock_delay):
     get_outage()
     assert mock_delay.call_count == 1  # called by outage_changed after creation
 
 
 @pytest.mark.django_db
-@patch('phoenix.slackbot.signals.create_or_update_announcement.delay')
+@patch("phoenix.slackbot.signals.create_or_update_announcement.delay")
 def test_solution_changed(mock_delay):
     get_outage(with_solution=True)
     assert mock_delay.call_count == 2  # called after outage creation and then

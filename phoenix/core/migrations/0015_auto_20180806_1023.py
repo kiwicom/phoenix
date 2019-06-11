@@ -5,19 +5,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0014_auto_20180802_1301'),
-    ]
+    dependencies = [("core", "0014_auto_20180802_1301")]
 
     operations = [
         migrations.AlterField(
-            model_name='outage',
-            name='eta',
+            model_name="outage",
+            name="eta",
             field=models.IntegerField(blank=True, default=0),
         ),
         migrations.AlterField(
-            model_name='outagehistory',
-            name='eta',
+            model_name="outagehistory",
+            name="eta",
             field=models.IntegerField(blank=True, default=0),
         ),
     ]

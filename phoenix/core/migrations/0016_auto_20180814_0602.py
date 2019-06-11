@@ -10,45 +10,88 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('core', '0015_auto_20180806_1023'),
+        ("core", "0015_auto_20180806_1023"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SolutionHistory',
+            name="SolutionHistory",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('summary', models.TextField(max_length=3000, null=True)),
-                ('resolved_at', models.DateTimeField(default=django.utils.timezone.now)),
-                ('solving_time', models.IntegerField(default=0)),
-                ('suggested_outcome', models.CharField(choices=[('PM', 'Postmortem report'), ('NO', 'None')], default='NO', max_length=2)),
-                ('report_url', models.TextField(blank=True, null=True)),
-                ('sales_affected', models.TextField(blank=True, max_length=3000, null=True)),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='history_solution_created', to=settings.AUTH_USER_MODEL)),
-                ('modified_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("summary", models.TextField(max_length=3000, null=True)),
+                (
+                    "resolved_at",
+                    models.DateTimeField(default=django.utils.timezone.now),
+                ),
+                ("solving_time", models.IntegerField(default=0)),
+                (
+                    "suggested_outcome",
+                    models.CharField(
+                        choices=[("PM", "Postmortem report"), ("NO", "None")],
+                        default="NO",
+                        max_length=2,
+                    ),
+                ),
+                ("report_url", models.TextField(blank=True, null=True)),
+                (
+                    "sales_affected",
+                    models.TextField(blank=True, max_length=3000, null=True),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="history_solution_created",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "modified_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
-            options={
-                'ordering': ['-pk'],
-            },
+            options={"ordering": ["-pk"]},
         ),
-        migrations.AlterModelOptions(
-            name='solution',
-            options={'ordering': ['-pk']},
-        ),
+        migrations.AlterModelOptions(name="solution", options={"ordering": ["-pk"]}),
         migrations.AddField(
-            model_name='solution',
-            name='sales_affected',
+            model_name="solution",
+            name="sales_affected",
             field=models.TextField(blank=True, max_length=3000, null=True),
         ),
         migrations.AlterField(
-            model_name='solution',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='solution_created', to=settings.AUTH_USER_MODEL),
+            model_name="solution",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="solution_created",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='solutionhistory',
-            name='solution',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='solution_history', to='core.Solution'),
+            model_name="solutionhistory",
+            name="solution",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="solution_history",
+                to="core.Solution",
+            ),
         ),
     ]

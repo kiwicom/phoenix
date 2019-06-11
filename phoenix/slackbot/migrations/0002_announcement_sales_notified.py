@@ -5,14 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('slackbot', '0001_initial'),
-    ]
+    dependencies = [("slackbot", "0001_initial")]
 
     operations = [
         migrations.AddField(
-            model_name='announcement',
-            name='sales_notified',
+            model_name="announcement",
+            name="sales_notified",
             field=models.BooleanField(blank=True, default=False, null=True),
-        ),
+        )
     ]

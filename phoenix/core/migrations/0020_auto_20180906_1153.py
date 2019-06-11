@@ -5,19 +5,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0019_notification_created_by'),
-    ]
+    dependencies = [("core", "0019_notification_created_by")]
 
     operations = [
         migrations.AlterField(
-            model_name='solution',
-            name='summary',
+            model_name="solution",
+            name="summary",
             field=models.TextField(blank=True, max_length=3000, null=True),
         ),
         migrations.AlterField(
-            model_name='solutionhistory',
-            name='summary',
+            model_name="solutionhistory",
+            name="summary",
             field=models.TextField(blank=True, max_length=3000, null=True),
         ),
     ]

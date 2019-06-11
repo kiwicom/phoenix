@@ -5,29 +5,27 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0009_auto_20180724_0842'),
-    ]
+    dependencies = [("core", "0009_auto_20180724_0842")]
 
     operations = [
         migrations.AddField(
-            model_name='monitor',
-            name='slack_channel_id',
+            model_name="monitor",
+            name="slack_channel_id",
             field=models.CharField(blank=True, max_length=10, null=True),
         ),
         migrations.AddField(
-            model_name='monitor',
-            name='slack_channel_name',
+            model_name="monitor",
+            name="slack_channel_name",
             field=models.CharField(blank=True, max_length=22, null=True),
         ),
         migrations.AddField(
-            model_name='monitorhistory',
-            name='slack_channel_id',
+            model_name="monitorhistory",
+            name="slack_channel_id",
             field=models.CharField(blank=True, max_length=10, null=True),
         ),
         migrations.AddField(
-            model_name='monitorhistory',
-            name='slack_channel_name',
+            model_name="monitorhistory",
+            name="slack_channel_name",
             field=models.CharField(blank=True, max_length=22, null=True),
         ),
     ]

@@ -24,17 +24,17 @@ def django_db_modify_db_settings(db_url):  # pylint: disable=redefined-outer-nam
     del connections["default"]  # have Django recreate the connection later
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def django_modify_slack_settings():
     """Change slack settings to non-usable.
 
     Just to make sure unittests don't make requests to
     slack API.
     """
-    settings.SLACK_TOKEN = 'unittest'
-    settings.SLACK_BOT_ID = 'unittest-bot-id'
-    settings.SLACK_BOT_TOKEN = 'unittest'
-    settings.SLACK_ANNOUNCE_CHANNEL_ID = 'unittest'
-    settings.SLACK_VERIFICATION_TOKEN = 'unittest-token'
-    settings.DATADOG_API_KEY = 'unittest'
-    settings.DATADOG_APP_KEY = 'unittest'
+    settings.SLACK_TOKEN = "unittest"
+    settings.SLACK_BOT_ID = "unittest-bot-id"
+    settings.SLACK_BOT_TOKEN = "unittest"
+    settings.SLACK_ANNOUNCE_CHANNEL_ID = "unittest"
+    settings.SLACK_VERIFICATION_TOKEN = "unittest-token"
+    settings.DATADOG_API_KEY = "unittest"
+    settings.DATADOG_APP_KEY = "unittest"

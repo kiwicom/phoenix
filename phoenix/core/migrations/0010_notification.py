@@ -7,18 +7,31 @@ import django.utils.timezone
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0009_auto_20180724_0842'),
-    ]
+    dependencies = [("core", "0009_auto_20180724_0842")]
 
     operations = [
         migrations.CreateModel(
-            name='Notification',
+            name="Notification",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(default=django.utils.timezone.now)),
-                ('text', models.TextField()),
-                ('outage', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to='core.Outage')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(default=django.utils.timezone.now)),
+                ("text", models.TextField()),
+                (
+                    "outage",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="notifications",
+                        to="core.Outage",
+                    ),
+                ),
             ],
-        ),
+        )
     ]

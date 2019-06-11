@@ -14,22 +14,22 @@ from .forms import MonitorUpdate, OutageCreateForm, OutageUpdateForm, SolutionCr
 
 class OutagesList(ListView):
     model = Outage
-    template_name = 'outages/outages_list.html'
+    template_name = "outages/outages_list.html"
     paginate_by = 20
 
     def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-        context['user_id'] = self.request.user.id
+        context["user_id"] = self.request.user.id
         return context
 
 
 class OutageCreate(CreateView):
     form_class = OutageCreateForm
     model = Outage
-    template_name = 'outages/outage_form.html'
+    template_name = "outages/outage_form.html"
 
     def get_success_url(self):
-        return reverse('outage_detail', kwargs={'pk': self.object.pk})
+        return reverse("outage_detail", kwargs={"pk": self.object.pk})
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -41,23 +41,21 @@ class OutageCreate(CreateView):
             form_class = self.get_form_class()
         # Create resolved_at field from datepicker and timepicker values.
         kwargs = self.get_form_kwargs()
-        if kwargs.get('data') and not kwargs['data']['eta']:
+        if kwargs.get("data") and not kwargs["data"]["eta"]:
             # If saving new data into form.
-            kwargs['data'] = kwargs['data'].copy()  # Change QueryDict to mutable.
-            kwargs['data']['eta'] = 0
+            kwargs["data"] = kwargs["data"].copy()  # Change QueryDict to mutable.
+            kwargs["data"]["eta"] = 0
         return form_class(**kwargs)
 
 
 class OutageDetail(DetailView):
     model = Outage
-    template_name = 'outages/outage_detail.html'
+    template_name = "outages/outage_detail.html"
 
     def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-        context['user_can_modify'] = user_can_modify_outage(
-            self.request.user.id,
-            self.kwargs['pk'],
-            True,
+        context["user_can_modify"] = user_can_modify_outage(
+            self.request.user.id, self.kwargs["pk"], True
         )
         return context
 
@@ -65,18 +63,18 @@ class OutageDetail(DetailView):
 class OutageUpdate(UpdateView):
     form_class = OutageUpdateForm
     model = Outage
-    template_name = 'outages/outage_form.html'
-    http_method_names = ['get', 'post']
+    template_name = "outages/outage_form.html"
+    http_method_names = ["get", "post"]
 
     def get_initial(self):
         initial = super().get_initial()
-        initial['communication_assignee'] = self.object.communication_assignee
-        initial['solution_assignee'] = self.object.solution_assignee
-        initial['eta'] = self.object.eta_remaining
+        initial["communication_assignee"] = self.object.communication_assignee
+        initial["solution_assignee"] = self.object.solution_assignee
+        initial["eta"] = self.object.eta_remaining
         return initial
 
     def get_success_url(self):
-        return reverse('outage_detail', kwargs={'pk': self.object.pk})
+        return reverse("outage_detail", kwargs={"pk": self.object.pk})
 
     def form_valid(self, form):
         form.modified_by = self.request.user
@@ -89,19 +87,19 @@ class OutageUpdate(UpdateView):
             form_class = self.get_form_class()
         # Create resolved_at field from datepicker and timepicker values.
         kwargs = self.get_form_kwargs()
-        if kwargs.get('data') and not kwargs['data']['eta']:
+        if kwargs.get("data") and not kwargs["data"]["eta"]:
             # If saving new data into form.
-            kwargs['data'] = kwargs['data'].copy()  # Change QueryDict to mutable.
-            kwargs['data']['eta'] = 0
+            kwargs["data"] = kwargs["data"].copy()  # Change QueryDict to mutable.
+            kwargs["data"]["eta"] = 0
         return form_class(**kwargs)
 
     def get(self, request, *args, **kwargs):
-        if not user_can_modify_outage(self.request.user.id, self.kwargs['pk']):
+        if not user_can_modify_outage(self.request.user.id, self.kwargs["pk"]):
             return HttpResponseForbidden()
         return super().get(request, args, kwargs)
 
     def post(self, request, *args, **kwargs):
-        if not user_can_modify_outage(self.request.user.id, self.kwargs['pk']):
+        if not user_can_modify_outage(self.request.user.id, self.kwargs["pk"]):
             return HttpResponseForbidden()
         return super().post(request, args, kwargs)
 
@@ -112,20 +110,20 @@ class SolutionAbstract(CreateView):
 
     form_class = SolutionCreateForm
     model = Solution
-    template_name = 'outages/resolution_form.html'
-    http_method_names = ['get', 'post']
+    template_name = "outages/resolution_form.html"
+    http_method_names = ["get", "post"]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['outage'] = Outage.objects.get(pk=self.kwargs['pk'])
-        context['time_start_from'] = datetime.now().strftime('%I:%M %p')
+        context["outage"] = Outage.objects.get(pk=self.kwargs["pk"])
+        context["time_start_from"] = datetime.now().strftime("%I:%M %p")
         return context
 
     def get_success_url(self):
-        return reverse('outage_detail', kwargs={'pk': self.kwargs['pk']})
+        return reverse("outage_detail", kwargs={"pk": self.kwargs["pk"]})
 
     def form_valid(self, form):
-        outage_id = self.kwargs['pk']
+        outage_id = self.kwargs["pk"]
         form.instance.outage_id = outage_id
         form.instance.created_by = self.request.user
         return super().form_valid(form)
@@ -136,77 +134,77 @@ class SolutionAbstract(CreateView):
             form_class = self.get_form_class()
         # Create resolved_at field from datepicker and timepicker values.
         kwargs = self.get_form_kwargs()
-        if kwargs.get('data'):
+        if kwargs.get("data"):
             # If saving new data into form.
-            kwargs['data'] = kwargs['data'].copy()  # Change QueryDict to mutable.
-            date = kwargs['data']['datepicker']
-            time = kwargs['data']['timepicker']
-            resolved_at = arrow.get(f'{date} {time}', 'MMM DD, YYYY hh:mm A')
-            user_tz = kwargs['data']['timezone']
-            update_values = {'resolved_at': resolved_at_to_utc(resolved_at, user_tz)}
-            report_url = kwargs['data']['report_url']
+            kwargs["data"] = kwargs["data"].copy()  # Change QueryDict to mutable.
+            date = kwargs["data"]["datepicker"]
+            time = kwargs["data"]["timepicker"]
+            resolved_at = arrow.get(f"{date} {time}", "MMM DD, YYYY hh:mm A")
+            user_tz = kwargs["data"]["timezone"]
+            update_values = {"resolved_at": resolved_at_to_utc(resolved_at, user_tz)}
+            report_url = kwargs["data"]["report_url"]
             if report_url:
-                if not report_url.startswith('http'):
-                    report_url = f'https://{report_url}'
-                update_values['report_url'] = report_url
-            kwargs['data'].update(update_values)
+                if not report_url.startswith("http"):
+                    report_url = f"https://{report_url}"
+                update_values["report_url"] = report_url
+            kwargs["data"].update(update_values)
         return form_class(**kwargs)
 
 
 class SolutionCreate(SolutionAbstract, CreateView):
-
     def get(self, request, *args, **kwargs):
-        if not user_can_modify_outage(self.request.user.id, self.kwargs['pk']):
+        if not user_can_modify_outage(self.request.user.id, self.kwargs["pk"]):
             return HttpResponseForbidden()
         return super().get(request, args, kwargs)
 
     def post(self, request, *args, **kwargs):
-        if not user_can_modify_outage(self.request.user.id, self.kwargs['pk']):
+        if not user_can_modify_outage(self.request.user.id, self.kwargs["pk"]):
             return HttpResponseForbidden()
         return super().post(request, args, kwargs)
 
 
 class SolutionUpdate(SolutionAbstract, UpdateView):
-
     def get_object(self, queryset=None):
-        outage = Outage.objects.get(pk=self.kwargs['pk'])
+        outage = Outage.objects.get(pk=self.kwargs["pk"])
         try:
             solution = outage.solution
         except Solution.DoesNotExist:
-            raise Http404('solution not found')
+            raise Http404("solution not found")
         return solution
 
     def get(self, request, *args, **kwargs):
-        if not user_can_modify_outage(self.request.user.id, self.kwargs['pk'],
-                                      allow_resolved=True):
+        if not user_can_modify_outage(
+            self.request.user.id, self.kwargs["pk"], allow_resolved=True
+        ):
             return HttpResponseForbidden()
         return super().get(request, args, kwargs)
 
     def post(self, request, *args, **kwargs):
-        if not user_can_modify_outage(self.request.user.id, self.kwargs['pk'],
-                                      allow_resolved=True):
+        if not user_can_modify_outage(
+            self.request.user.id, self.kwargs["pk"], allow_resolved=True
+        ):
             return HttpResponseForbidden()
         return super().post(request, args, kwargs)
 
 
 class MonitorList(ListView):
     model = Monitor
-    template_name = 'outages/monitors/list.html'
+    template_name = "outages/monitors/list.html"
 
 
 class MonitorDetail(DetailView):
     model = Monitor
-    template_name = 'outages/monitors/detail.html'
+    template_name = "outages/monitors/detail.html"
 
 
 class MonitorUpdateView(UpdateView):
     model = Monitor
     form_class = MonitorUpdate
-    template_name = 'outages/monitors/form.html'
+    template_name = "outages/monitors/form.html"
 
     def form_valid(self, form):
         form.modified_by = self.request.user
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('monitor_detail', kwargs={'pk': self.object.pk})
+        return reverse("monitor_detail", kwargs={"pk": self.object.pk})

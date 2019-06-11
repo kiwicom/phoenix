@@ -8,22 +8,36 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-        ('core', '0001_initial'),
-    ]
+    dependencies = [("core", "0001_initial")]
 
     operations = [
         migrations.CreateModel(
-            name='Announcement',
+            name="Announcement",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('message_ts', models.CharField(blank=True, max_length=100, null=True)),
-                ('channel_id', models.CharField(max_length=100)),
-                ('create_dedicated_channel', models.BooleanField(default=False)),
-                ('dedicated_channel_id', models.CharField(blank=True, max_length=100, null=True)),
-                ('permalink', models.CharField(blank=True, max_length=200, null=True)),
-                ('date', models.DateTimeField(auto_now_add=True)),
-                ('outage', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='core.Outage')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("message_ts", models.CharField(blank=True, max_length=100, null=True)),
+                ("channel_id", models.CharField(max_length=100)),
+                ("create_dedicated_channel", models.BooleanField(default=False)),
+                (
+                    "dedicated_channel_id",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                ("permalink", models.CharField(blank=True, max_length=200, null=True)),
+                ("date", models.DateTimeField(auto_now_add=True)),
+                (
+                    "outage",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE, to="core.Outage"
+                    ),
+                ),
             ],
-        ),
+        )
     ]

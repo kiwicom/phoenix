@@ -5,14 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0011_auto_20180725_1143'),
-    ]
+    dependencies = [("core", "0011_auto_20180725_1143")]
 
     operations = [
         migrations.AddField(
-            model_name='solution',
-            name='report_url',
+            model_name="solution",
+            name="report_url",
             field=models.TextField(blank=True, null=True),
-        ),
+        )
     ]

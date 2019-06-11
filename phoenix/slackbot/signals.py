@@ -11,15 +11,16 @@ from .tasks import create_or_update_announcement, sync_monitor_details_task
 @receiver(post_save, sender=Outage)
 def outage_changed(sender, instance, created, **kwargs):
     if created:
-        Announcement(outage=instance, channel_id=settings.SLACK_ANNOUNCE_CHANNEL_ID).save()
+        Announcement(
+            outage=instance, channel_id=settings.SLACK_ANNOUNCE_CHANNEL_ID
+        ).save()
     create_or_update_announcement.delay(outage_pk=instance.pk, check_history=True)
 
 
 @receiver(post_save, sender=Solution)
 def solution_changed(sender, instance, created, **kwargs):
     pk = instance.outage.pk
-    create_or_update_announcement.delay(outage_pk=pk, check_history=True,
-                                        resolved=True)
+    create_or_update_announcement.delay(outage_pk=pk, check_history=True, resolved=True)
 
 
 @receiver(post_save, sender=Monitor)

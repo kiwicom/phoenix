@@ -5,18 +5,15 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0010_notification'),
-    ]
+    dependencies = [("core", "0010_notification")]
 
     operations = [
         migrations.AlterModelOptions(
-            name='notification',
-            options={'ordering': ['-pk']},
+            name="notification", options={"ordering": ["-pk"]}
         ),
         migrations.AlterField(
-            model_name='solution',
-            name='summary',
+            model_name="solution",
+            name="summary",
             field=models.TextField(max_length=3000, null=True),
         ),
     ]

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = 'Joins all slack channels used by datadog to agregate all alerts'
+    help = "Joins all slack channels used by datadog to agregate all alerts"
 
     def handle(self, *args, **options):
         join_datadog_channels()
