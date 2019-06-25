@@ -14,7 +14,7 @@ google-api-python-client
 google-auth
 gunicorn
 kiwi-structlog-config
-psycopg2
+psycopg2-binary
 raven
 redis
 requests

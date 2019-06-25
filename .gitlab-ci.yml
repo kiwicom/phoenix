@@ -24,7 +24,6 @@ before_script:
 
 include:
   - 'https://ci-files.skypicker.com/templates/build/black.yml'
-  - 'https://ci-files.skypicker.com/templates/build/coala.yml'
   - 'https://ci-files.skypicker.com/templates/test/pylint.yml'
   - 'https://ci-files.skypicker.com/templates/release/release_latest.yml'
 
