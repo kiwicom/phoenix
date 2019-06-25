@@ -56,6 +56,13 @@ SLACK_ACTIONS = {
         "type": "button",
         "value": "edit_duration",
     },
+    "reopen_outage": {
+        "name": "reopen_outage",
+        "text": "Reopen Outage",
+        "type": "button",
+        "value": "reopen_outage",
+        "style": "danger",
+    },
 }
 
 
@@ -157,7 +164,9 @@ class SolutionMessage(BaseMessage):
             SLACK_ACTIONS["edit_duration"],
         ]
         if not self.solution.report_url:
-            attachment["actions"] += [SLACK_ACTIONS["attach_report"]]
+            attachment["actions"].append(SLACK_ACTIONS["attach_report"])
+
+        attachment["actions"].append(SLACK_ACTIONS["reopen_outage"])
         return attachment
 
     def add_footer(self, attachment):

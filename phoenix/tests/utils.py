@@ -14,6 +14,7 @@ def get_outage(with_solution=False):
         sales_affected_choice="Y",
         sales_affected="test",
         systems_affected=system,
+        resolved=True,
     )
     outage.save()
     if with_solution:

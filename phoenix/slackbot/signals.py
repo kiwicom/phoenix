@@ -14,13 +14,16 @@ def outage_changed(sender, instance, created, **kwargs):
         Announcement(
             outage=instance, channel_id=settings.SLACK_ANNOUNCE_CHANNEL_ID
         ).save()
-    create_or_update_announcement.delay(outage_pk=instance.pk, check_history=True)
+    check_history = not instance.resolved  # check history only if not resolved incident
+    create_or_update_announcement.delay(
+        outage_pk=instance.pk, check_history=check_history
+    )
 
 
 @receiver(post_save, sender=Solution)
 def solution_changed(sender, instance, created, **kwargs):
     pk = instance.outage.pk
-    create_or_update_announcement.delay(outage_pk=pk, check_history=True, resolved=True)
+    create_or_update_announcement.delay(outage_pk=pk, check_history=True)
 
 
 @receiver(post_save, sender=Monitor)

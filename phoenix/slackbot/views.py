@@ -493,15 +493,23 @@ class InteractiveMesssageHandler:
     def resolve(self):
         pn = PostmortemNotifications()
         pn.save()
-        Solution.objects.create(
-            outage=self.outage,
-            created_by=provision_slack_user(self.actor_id),
-            postmortem_notifications=pn,
-        )
+        # Mark outage as resolved
+        self.outage.resolved = True
+        self.outage.save()
+
+        if not hasattr(self.outage, "solution"):
+            Solution.objects.create(
+                outage=self.outage,
+                created_by=provision_slack_user(self.actor_id),
+                postmortem_notifications=pn,
+            )
+        else:
+            self.outage.solution.save(modified_by=self.actor)
         if not self.outage.sales_affected_choice == Outage.UNKNOWN:
             sales_affected = self.outage.sales_affected_choice
         else:
             sales_affected = ""
+
         return {
             "callback_id": f"{self.outage.id}_resolve",
             "title": f"{self.outage.summary[:20]}...",
@@ -513,6 +521,7 @@ class InteractiveMesssageHandler:
                     "name": "summary",
                     "type": "textarea",
                     "hint": "Provide solution description",
+                    "value": self.outage.solution.summary or "",
                     "optional": True,
                 },
                 {
@@ -721,6 +730,10 @@ class InteractiveMesssageHandler:
             ],
         }
 
+    def reopen_outage(self):
+        self.outage.resolved = False
+        self.outage.save(modified_by=self.actor)
+
 
 def handle_interactive_message(request, payload):
     message_handler = InteractiveMesssageHandler(request, payload)
@@ -893,8 +906,11 @@ class DialogSubmissionHandler:
         outage.sales_affected_choice = self.dialog_data.get("sales_affected_choice")
         outage.lost_bookings = lost_bookings
         outage.impact_on_turnover = impact_on_turnover
-        solution.save(modified_by=self.actor)
+
+        if not outage.resolved:
+            outage.resolved = True
         solution.outage.save(modified_by=self.actor)
+        solution.save(modified_by=self.actor)
 
     def editsolved(self):  # Ignore RadonBear
         outage = Outage.objects.get(id=self.obj)

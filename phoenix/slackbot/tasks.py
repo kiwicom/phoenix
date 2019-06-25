@@ -125,70 +125,28 @@ def notify_unassigned(user, outage_link, assignee_type="Solution"):
     notify_user_with_im(user, message)
 
 
-class OutageComment:  # pylint: disable=too-many-instance-attributes
-    def __init__(self, outage, versions, announcement, resolved):
+class CommentBase:
+    def __init__(self, outage, history):
         self.outage = outage
-        if len(versions) == 2:
-            self.current_version, self.previous_version = versions
-        else:
-            self.current_version, self.previous_version = versions[0], None
-        self.announcement = announcement
         self.slack_comments = []
         self.html_comments = []
-        self.resolved = resolved
-        if self._is_change:
+        self.is_change = len(history) == 2
+        if self.is_change:
+            self.current_version, self.previous_version = history
             self.modified_by = self.current_version.modified_by
         else:
+            # If new announcement or resolved for the first time
+            self.current_version = history[0]
+            self.previous_version = None
             self.modified_by = self.current_version.created_by
-
-    @property
-    def _is_change(self):
-        return bool(self.previous_version)
-
-    def generate_comments(self):
-        """Generate comments in right order."""
-        if self.resolved:
-            if self._is_change:
-                self.generate_resolved_comments()
-            else:
-                self.add_was_resolved_comment()
-        else:
-            if self._is_change:
-                self.generate_unresolved_comments()
-        if any(self.slack_comments):
-            # Always add "modified by" at the end if any comment was added
-            self.add_modified_by()
-
-    def generate_unresolved_comments(self):
-        self.process_more_info()  # Always add more info as first
-
-        if self._eta_changed():
-            self.add_eta_changed()
-        if self._assignees_changed():
-            self.add_assignees_changed()
-
-        fields = ["sales_affected_choice", "sales_affected"]
-        self.add_generic_comments(fields)
-
-    def generate_resolved_comments(self):
-        fields = [
-            "summary",
-            "sales_affected_choice",
-            "sales_affected",
-            "suggested_outcome",
-            "report_url",
-            "started_at",
-            "resolved_at",
-        ]
-        self.add_generic_comments(fields)
 
     def compose_comments(self):
         return "\n".join(self.slack_comments), " ".join(self.html_comments)
 
     def post_comments(self, slack_comment, html_comment, icon_url=None, username=None):
         resp = add_comment(
-            self.announcement.message_ts,
-            self.announcement.channel_id,
+            self.outage.announcement.message_ts,
+            self.outage.announcement.channel_id,
             slack_comment,
             icon_url=icon_url,
             username=username,
@@ -196,39 +154,70 @@ class OutageComment:  # pylint: disable=too-many-instance-attributes
         if resp["ok"]:
             self.outage.add_notification(html_comment, self.modified_by)
 
+    def add_modified_by(self):
+        self.slack_comments.append(f"by {format_user_for_slack(self.modified_by)}")
+
     def process(self):
-        self.generate_comments()
+        self.generate()
+        if any(self.slack_comments):
+            # Always add "modified by" at the end if any comment was added
+            self.add_modified_by()
         slack_comment, html_comment = self.compose_comments()
         self.post_comments(slack_comment, html_comment)
+        self.slack_comments = []
+        self.html_comments = []
 
-    def add_eta_changed(self):
-        comment = "ETA changed to {deadline} (UTC)."
-        slack_eta = format_datetime(self.current_version.eta_deadline)
-        html_eta = format_outage_datetime(self.current_version.eta_human_deadline)
-        if self.current_version.eta_is_unknown:
-            html_eta = slack_eta = "Unknown"
+    def field_changed(self, field):
+        # Check if custom method checking wether field values has changed exists.
+        # This method serves as override for generic checking if that is not usable for
+        # specific field.
+        # If you want to create this custom method use format "_{field_name}_changed".
+        field_changed_custom_method = getattr(self, f"_{field}_changed", None)
+        if field_changed_custom_method:
+            changed = field_changed_custom_method()
+        else:
+            current = getattr(self.current_version, field)
+            previous = getattr(self.previous_version, field)
+            changed = current != previous
+        return changed
 
-        self.slack_comments.append(comment.format(deadline=slack_eta))
-        self.html_comments.append(comment.format(deadline=html_eta))
+    def generate_generic_comment(self, field):
+        current = getattr(self.current_version, field)
+        field_label = " ".join([f.title() for f in field.split("_")])
+        comment = f"{field_label} changed to: {current}."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
 
-    def add_assignees_changed(self):
-        comment = " Solution assignee is {solution_assignee}."
-        comment += " Communication assignee is {communication_assignee}."
+    def generate_comment(self, field):
+        # Check if custom method for adding comment exists. This method serves
+        # as override for generic comment addition, using this method you can specify
+        # format of the comment message.
+        # If you want to create this method use format "_add_{field_name}_comment"
+        custom_add_comment_method = getattr(self, f"_add_{field}_comment", None)
+        if custom_add_comment_method:
+            custom_add_comment_method()
+        else:
+            self.generate_generic_comment(field)
 
-        self.slack_comments.append(
-            comment.format(
-                solution_assignee=format_user_for_slack(self.outage.solution_assignee),
-                communication_assignee=format_user_for_slack(
-                    self.outage.communication_assignee
-                ),
-            )
-        )
-        self.html_comments.append(
-            comment.format(
-                solution_assignee=self.outage.solution_assignee.email,
-                communication_assignee=self.outage.communication_assignee.email,
-            )
-        )
+    def add_comments(self, fields):
+        for field in fields:
+            changed = self.field_changed(field)
+            if changed:
+                self.generate_comment(field)
+
+
+class OutageComment(CommentBase):
+    def generate(self):
+        if self.is_change:
+            self.generate_comments()
+
+        if self.reopened():
+            self._add_reopened_comment()
+
+    def generate_comments(self):
+        self.process_more_info()  # Always add more info as first
+        fields = ["eta", "assignees", "sales_affected_choice", "sales_affected"]
+        self.add_comments(fields)
 
     def process_more_info(self):
         more_info = self.current_version.change_desc
@@ -240,51 +229,11 @@ class OutageComment:  # pylint: disable=too-many-instance-attributes
                 username=self.modified_by.profile.slack_username,
             )
 
-    def add_modified_by(self):
-        self.slack_comments.append(f"by {format_user_for_slack(self.modified_by)}")
+    def reopened(self):
+        return hasattr(self.outage, "solution") and not self.outage.resolved
 
-    def add_suggested_outcome_comment(self):
-        value = dict(self.current_version.OUTCOME_CHOICES)[
-            self.current_version.suggested_outcome
-        ]
-        comment = f"Suggested outcome changed to: {value}."
-        self.slack_comments.append(comment)
-        self.html_comments.append(comment)
-
-    def add_resolved_at_comment(self):
-        slack_value = format_datetime(self.current_version.resolved_at.timestamp())
-        html_value = format_outage_datetime(self.current_version.resolved_at)
-        comment = "Resolved at changed to: {} (UTC)."
-        self.slack_comments.append(comment.format(slack_value))
-        self.html_comments.append(comment.format(html_value))
-
-    def add_started_at_comment(self):
-        slack_value = format_datetime(
-            self.current_version.solution.outage.started_at.timestamp()
-        )
-        html_value = format_outage_datetime(
-            self.current_version.solution.outage.started_at
-        )
-        comment = "Started at changed to: {} (UTC)."
-        self.slack_comments.append(comment.format(slack_value))
-        self.html_comments.append(comment.format(html_value))
-
-    def add_sales_affected_choice_comment(self):
-        if isinstance(self.current_version, Outage):
-            choice = self.current_version
-        else:
-            choice = self.current_version.outage
-        value = choice.sales_affected_choice_human
-        comment = f"Sales affected changed to: {value}."
-        self.slack_comments.append(comment)
-        self.html_comments.append(comment)
-
-    def add_sales_affected_comment(self):
-        if isinstance(self.current_version, Outage):
-            value = self.current_version.sales_affected
-        else:
-            value = self.current_version.outage.sales_affected
-        comment = f"Sales affected details changed to: {value}."
+    def _add_reopened_comment(self):
+        comment = "Outage has been reopened"
         self.slack_comments.append(comment)
         self.html_comments.append(comment)
 
@@ -302,6 +251,16 @@ class OutageComment:  # pylint: disable=too-many-instance-attributes
             >= 2
         )
         return eta_unknown_change or eta_change
+
+    def _add_eta_comment(self):
+        comment = "ETA changed to {deadline} (UTC)."
+        slack_eta = format_datetime(self.current_version.eta_deadline)
+        html_eta = format_outage_datetime(self.current_version.eta_human_deadline)
+        if self.current_version.eta_is_unknown:
+            html_eta = slack_eta = "Unknown"
+
+        self.slack_comments.append(comment.format(deadline=slack_eta))
+        self.html_comments.append(comment.format(deadline=html_eta))
 
     def _assignees_changed(self):
         """Check if curent and previous assignees differ.
@@ -337,6 +296,80 @@ class OutageComment:  # pylint: disable=too-many-instance-attributes
             )
         return not all((is_solution_same, is_communication_same))
 
+    def _add_assignees_comment(self):
+        comment = " Solution assignee is {solution_assignee}."
+        comment += " Communication assignee is {communication_assignee}."
+
+        self.slack_comments.append(
+            comment.format(
+                solution_assignee=format_user_for_slack(self.outage.solution_assignee),
+                communication_assignee=format_user_for_slack(
+                    self.outage.communication_assignee
+                ),
+            )
+        )
+        self.html_comments.append(
+            comment.format(
+                solution_assignee=self.outage.solution_assignee.email,
+                communication_assignee=self.outage.communication_assignee.email,
+            )
+        )
+
+    def _add_sales_affected_choice_comment(self):
+        value = self.current_version.sales_affected_choice_human
+        comment = f"Sales affected changed to: {value}."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
+
+    def _add_sales_affected_comment(self):
+        value = self.current_version.sales_affected
+        comment = f"Sales affected details changed to: {value}."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
+
+
+class SolutionComment(CommentBase):
+    def generate(self):
+        if self.is_change:
+            self.generate_comments()
+
+        if self.has_been_resolved():
+            self._add_resolved_comment()
+
+    def generate_comments(self):
+        fields = [
+            "summary",
+            "sales_affected_choice",
+            "sales_affected",
+            "suggested_outcome",
+            "report_url",
+            "started_at",
+            "resolved_at",
+        ]
+        self.add_comments(fields)
+
+    def has_been_resolved(self):
+        if not self.is_change:
+            return True
+        outage_history = self.current_version.solution.outage.history_outage.all()[:2]
+        current, previous = outage_history
+        if current.resolved and not previous.resolved:
+            return True
+        return False
+
+    def _add_resolved_comment(self):
+        comment = "Outage has been resolved."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
+
+    def _add_suggested_outcome_comment(self):
+        value = dict(self.current_version.OUTCOME_CHOICES)[
+            self.current_version.suggested_outcome
+        ]
+        comment = f"Suggested outcome changed to: {value}."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
+
     def _resolved_at_changed(self):
         return (
             abs(
@@ -346,42 +379,64 @@ class OutageComment:  # pylint: disable=too-many-instance-attributes
             >= 2
         )
 
+    def _add_resolved_at_comment(self):
+        slack_value = format_datetime(self.current_version.resolved_at.timestamp())
+        html_value = format_outage_datetime(self.current_version.resolved_at)
+        comment = "Resolved at changed to: {} (UTC)."
+        self.slack_comments.append(comment.format(slack_value))
+        self.html_comments.append(comment.format(html_value))
+
     def _started_at_changed(self):
         outage = self.current_version.solution.outage
         current, previous = outage.history_outage.all()[:2]
         return abs(current.started_at.minute - previous.started_at.minute) >= 2
 
-    def add_generic_comments(self, fields):
-        for field in fields:
-            changed = False
-            current = getattr(self.current_version, field, None)
-            previous = getattr(self.previous_version, field, None)
-            changed_func = getattr(self, f"_{field}_changed", None)
-            if changed_func:
-                if changed_func():
-                    changed = True
-            elif current != previous:
-                changed = True
-            logger.info(f"{current} - {previous}")
-            logger.info(changed)
-            if changed:
-                custom_comment = getattr(self, f"add_{field}_comment", None)
-                if custom_comment:
-                    custom_comment()
-                else:
-                    field_label = " ".join([f.title() for f in field.split("_")])
-                    comment = f"{field_label} changed to: {current}."
-                    self.slack_comments.append(comment)
-                    self.html_comments.append(comment)
+    def _add_started_at_comment(self):
+        slack_value = format_datetime(
+            self.current_version.solution.outage.started_at.timestamp()
+        )
+        html_value = format_outage_datetime(
+            self.current_version.solution.outage.started_at
+        )
+        comment = "Started at changed to: {} (UTC)."
+        self.slack_comments.append(comment.format(slack_value))
+        self.html_comments.append(comment.format(html_value))
 
-    def add_was_resolved_comment(self):
-        comment = "Outage has been resolved."
+    def _sales_affected_choice_changed(self):
+        outage_history = self.current_version.solution.outage.history_outage.all()[:2]
+        current, previous = outage_history
+        return current.sales_affected_choice != previous.sales_affected_choice
+
+    def _add_sales_affected_choice_comment(self):
+        value = self.current_version.solution.outage.sales_affected_choice_human
+        comment = f"Sales affected changed to: {value}."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
+
+    def _sales_affected_changed(self):
+        outage_history = self.current_version.solution.outage.history_outage.all()[:2]
+        current, previous = outage_history
+        return current.sales_affected != previous.sales_affected
+
+    def _add_sales_affected_comment(self):
+        value = self.current_version.solution.outage.sales_affected
+        comment = f"Sales affected details changed to: {value}."
         self.slack_comments.append(comment)
         self.html_comments.append(comment)
 
 
+def generate_comments(outage):
+    if outage.resolved:
+        history = outage.solution.solution_history.all()[:2]
+        comment = SolutionComment(outage, history)
+    else:
+        history = outage.history_outage.all()[:2]
+        comment = OutageComment(outage, history)
+    comment.process()
+
+
 @shared_task  # Ignore RadonBear
-def create_or_update_announcement(outage_pk, check_history=False, resolved=False):
+def create_or_update_announcement(outage_pk, check_history=False):
     """Core task that updates announcement."""
     from .models import Announcement
 
@@ -427,12 +482,7 @@ def create_or_update_announcement(outage_pk, check_history=False, resolved=False
             pin_message(channel_id, announcement.message_ts)
         elif check_history:
             # check history
-            if resolved:
-                versions = outage.solution.solution_history.all()[:2]
-            else:
-                versions = outage.history_outage.all()[:2]
-            outage_comment = OutageComment(outage, versions, announcement, resolved)
-            outage_comment.process()
+            generate_comments(outage)
 
         if solution:
             unpin_message(channel_id, announcement.message_ts)
@@ -479,7 +529,7 @@ def add_comment(message_ts, channel_id, comment, icon_url=None, username=None):
 @shared_task
 def notify_users():
     now = arrow.utcnow().shift(minutes=settings.NOTIFY_BEFORE_ETA)
-    for outage in Outage.objects.filter(solution__isnull=True).exclude(eta=0):
+    for outage in Outage.objects.filter(resolved=False).exclude(eta=0):
         # notify only if eta is known (eta=0 => unknown)
         if arrow.get(outage.eta_deadline) < now:
             announcement = outage.announcement

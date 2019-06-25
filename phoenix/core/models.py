@@ -74,6 +74,9 @@ class AbstractOutage(models.Model):
     eta = models.IntegerField(null=False, blank=True, default=0)
     eta_last_modified = models.DateTimeField(null=True)
 
+    # Needed for re-open outage functionality
+    resolved = models.BooleanField(default=False)
+
     class Meta:
         abstract = True
 
@@ -154,7 +157,7 @@ class Outage(AbstractOutage):
     @property
     def is_resolved(self):
         try:
-            if self.solution is not None:
+            if self.resolved and self.solution is not None:
                 return self.solution
             return False
         except ObjectDoesNotExist:
@@ -266,6 +269,7 @@ class Outage(AbstractOutage):
             modified_by=modified_by,
             started_at=self.started_at,
             systems_affected=self.systems_affected,
+            resolved=self.resolved,
         )
         history.save()
 

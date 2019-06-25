@@ -25,6 +25,7 @@ disable =
   bad-continuation,
   too-many-locals,
   logging-fstring-interpolation,
+  too-many-lines
 
 [REPORTS]
 output-format=colorized
