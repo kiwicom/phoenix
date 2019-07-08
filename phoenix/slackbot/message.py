@@ -193,15 +193,17 @@ class OutageMessage(BaseMessage):
         self.color = "danger"
 
     def add_fields(self, attachment):
+        if self.outage.eta_is_unknown:
+            if self.outage.prompt_active:
+                eta_value = "We will try to get you eta in 10 minutes"
+            else:
+                eta_value = "Unknown"
+        else:
+            eta_value = utils.format_datetime(self.outage.eta_deadline)
         attachment["fields"] = [
             slack_field("sales", value=self.get_formatted_sales()),
             slack_field("assigneess", value=self.get_formatted_assigneess()),
-            slack_field(
-                "eta",
-                value="Unknown"
-                if self.outage.eta_is_unknown
-                else utils.format_datetime(self.outage.eta_deadline),
-            ),
+            slack_field("eta", value=eta_value),
         ]
         return attachment
 

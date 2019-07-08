@@ -13,7 +13,7 @@ from django.db import DatabaseError, IntegrityError, transaction
 
 from ..core.models import Monitor, Outage, Profile, Solution
 from ..integration.datadog import get_all_slack_channels, sync_monitor_details
-from ..integration.gitlab import (
+from ..integration.gitlab import (  # Ignore PyImportSortBear
     get_due_date_issues,
     get_gitlab_user_email,
     get_issue,
@@ -113,6 +113,8 @@ def notify_user_with_im(user, message=None, attachments=None):
     )
     if not data["ok"]:
         logger.error(f"Posting direct message failed: {data['error']}")
+        return False
+    return data
 
 
 def notify_assigned(user, outage_link, assignee_type="Solution"):
@@ -533,11 +535,7 @@ def notify_users():
         # notify only if eta is known (eta=0 => unknown)
         if arrow.get(outage.eta_deadline) < now:
             announcement = outage.announcement
-            assignees = [
-                outage.created_by,
-                outage.solution_assignee,
-                outage.communication_assignee,
-            ]
+            assignees = outage.get_involved_users()
             notified = []
             for assignee in assignees:
                 user_slack_id = assignee.last_name
@@ -946,3 +944,74 @@ def postmortem_notifications():
         else:
             if solution.created < label_limit:
                 postmortem_label_notify(solution)
+
+
+def eta_should_be_notified(created):
+    """Check if X minutes have elapsed since outage creation."""
+    now = arrow.utcnow()
+    elapsed_minutes = divmod((now - created).seconds, 60)[0]
+    return elapsed_minutes >= settings.UNKNOWN_ETA_PROMPT_AFTER_MINUTES
+
+
+@shared_task
+def missing_eta_notify():
+    """Prompt user for ETA update.
+
+    If ETA hasn't been provided at announcement creation prompt users for update after
+    `UNKNOWN_ETA_PROMPT_AFTER_MINUTES`.
+    If ETA has changed in meantime, users shouldn't be prompted.
+    """
+    outages = Outage.objects.filter(solution__isnull=True).filter(
+        prompt_for_eta_update=True
+    )
+    for outage in outages:
+        if eta_should_be_notified(outage.created):
+            notified_users = []
+            users = outage.get_involved_users()
+            for user in users:
+                if user.id in notified_users:
+                    continue
+                user_slack_id = user.last_name
+                if not user_slack_id:
+                    logger.warning(
+                        f"Unable to send ETA update prompt to user {user.email} "
+                        f"because slack id is unknown"
+                    )
+                res = notify_user_with_im(
+                    user_slack_id,
+                    attachments=[
+                        {
+                            "callback_id": f"{outage.id}",
+                            "fallback": f"Can you provide an ETA for {outage.announcement.permalink}?",
+                            "color": "danger",
+                            "title": f"{outage.systems_affected_human} incident",
+                            "attachment_type": "default",
+                            "title_link": outage.announcement.permalink,
+                            "text": "Can you provide an ETA?",
+                            "actions": [
+                                {
+                                    "text": "Still no ETA",
+                                    "name": "set_eta",
+                                    "type": "button",
+                                    "value": "0",
+                                },
+                                {
+                                    "text": "5 minutes",
+                                    "name": "set_eta",
+                                    "type": "button",
+                                    "value": "5",
+                                },
+                                {
+                                    "text": "15 minutes",
+                                    "name": "set_eta",
+                                    "type": "button",
+                                    "value": "15",
+                                },
+                            ],
+                        }
+                    ],
+                )
+                if res:
+                    notified_users.append(user.id)
+                    outage.prompt_for_eta_update = False
+                    outage.save()

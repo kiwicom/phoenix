@@ -151,6 +151,16 @@ class AbstractOutage(models.Model):
 
 
 class Outage(AbstractOutage):
+    # If no ETA, phoenix will ask assignee for ETA update after X minutes.
+    # This attribute should only be set to True if new outage has not been provided
+    # with ETA. In case of edit or some other change of ETA this should be False.
+    #
+    # User should be prompted for ETA update only if ETA wasn't known at the time of
+    # announcement creation.
+    prompt_for_eta_update = models.BooleanField(default=True)
+    # If false users won't be able to change ETA using the prompt menu
+    prompt_active = models.BooleanField(default=True)
+
     def __str__(self):
         return f"Outage {self.id}"
 
@@ -187,6 +197,9 @@ class Outage(AbstractOutage):
             eta = 0
         self.eta_last_modified = timezone.now()
         self.eta = eta
+        if eta:
+            self.prompt_for_eta_update = False
+            self.prompt_active = False
 
     def _make_assignee(self, user_last_name, column="solution_assignee"):
         if not user_last_name:
@@ -214,13 +227,13 @@ class Outage(AbstractOutage):
     def add_notification(self, text, by_user):
         self.notifications.create(text=text, created_by=by_user)
 
+    def get_involved_users(self):
+        """Return list of involved users."""
+        return [self.created_by, self.solution_assignee, self.communication_assignee]
+
     def get_involved_user_ids(self):
         """Return IDs of creater and assignees."""
-        involved_users = [
-            self.created_by.id,
-            self.solution_assignee.id,
-            self.communication_assignee.id,
-        ]
+        involved_users = [a.id for a in self.get_involved_users()]
         return involved_users
 
     def can_edit_outage(self, user_id):

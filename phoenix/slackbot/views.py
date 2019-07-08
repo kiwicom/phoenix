@@ -15,7 +15,7 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import FormParser
 from rest_framework.response import Response
 
-from ..core.models import (
+from ..core.models import (  # Ignore PyImportSortBear
     Alert,
     Monitor,
     Outage,
@@ -318,7 +318,6 @@ def announce(request):
                     "label": "What happened?",
                     "name": "summary",
                     "type": "textarea",
-                    "value": data["text"],
                     "hint": "Provide outage description.",
                 },
                 {
@@ -349,7 +348,7 @@ def announce(request):
                     "label": "Primary affected system",
                     "type": "select",
                     "name": "affected_system",
-                    "options": get_system_option(),
+                    "options": get_system_option(sort_by=data["text"]),
                     "hint": "Select primary affected system.",
                 },
                 {
@@ -387,13 +386,13 @@ def handle_interactions(request):
 
 class InteractiveMesssageHandler:
     def __init__(self, request, payload):
-        self.request = request
         self.action = payload.get("actions")[0]
         self.outage = Outage.objects.get(id=payload.get("callback_id"))
         self.actor_id = payload["user"]["id"]
         self.actor = provision_slack_user(self.actor_id)
         self.trigger_id = payload.get("trigger_id")
         self.user_tz = dateutil.tz.gettz(request.user.profile.timezone)
+        self.payload = payload
 
     def handle(self):
         if not user_can_edit_all_outages(
@@ -730,6 +729,30 @@ class InteractiveMesssageHandler:
             ],
         }
 
+    def set_eta(self):
+        """Use for ETA update prompt."""
+        if not self.outage.prompt_active:
+            data = slack_bot_client.api_call(
+                "chat.delete",
+                channel=self.payload["channel"]["id"],
+                ts=self.payload["message_ts"],
+            )
+            if not data["ok"]:
+                logger.error(f"ETA prompt update error: {data}")
+            return
+        new_eta = int(self.action["value"])
+        self.outage.set_eta(new_eta)
+        self.outage.prompt_active = False
+        self.outage.save(modified_by=self.actor)
+
+        data = slack_bot_client.api_call(
+            "chat.delete",
+            channel=self.payload["channel"]["id"],
+            ts=self.payload["message_ts"],
+        )
+        if not data["ok"]:
+            logger.error(f"ETA prompt update error: {data}")
+
     def reopen_outage(self):
         self.outage.resolved = False
         self.outage.save(modified_by=self.actor)
@@ -906,6 +929,7 @@ class DialogSubmissionHandler:
         outage.sales_affected_choice = self.dialog_data.get("sales_affected_choice")
         outage.lost_bookings = lost_bookings
         outage.impact_on_turnover = impact_on_turnover
+        outage.prompt_for_eta_update = False
 
         if not outage.resolved:
             outage.resolved = True

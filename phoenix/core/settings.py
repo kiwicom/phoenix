@@ -4,7 +4,7 @@ import os
 import re
 
 from kw.structlog_config import (  # pylint: disable=no-name-in-module,import-error
-    configure_stdlib_logging,
+    configure_stdlib_logging,  # Ignore PyImportSortBear
     configure_structlog,
 )
 
@@ -251,6 +251,11 @@ POSTMORTEM_LABEL_NOTIFICATION_LIMIT = int(
 POSTMORTEM_LABEL = os.getenv("POSTMORTEM_LABEL", "process:wip")
 POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR = os.getenv(
     "POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR"
+)
+
+# If ETA uknown, notify assignee after X minutes.
+UNKNOWN_ETA_PROMPT_AFTER_MINUTES = int(
+    os.getenv("UNKNOWN_ETA_PROMPT_AFTER_MINUTES", "10")
 )
 
 ALLOW_ALL_TO_NOTIFY = distutils.util.strtobool(

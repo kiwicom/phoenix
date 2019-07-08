@@ -53,6 +53,7 @@ services:
       - DATADOG_AGENT_HOSTNAME
       - DATADOG_AGENT_PORT
       - ALLOW_ALL_TO_NOTIFY
+      - UNKNOWN_ETA_PROMPT_AFTER_MINUTES
 
     tty: true
     command:
@@ -133,6 +134,7 @@ services:
       - DATADOG_AGENT_HOSTNAME
       - DATADOG_AGENT_PORT
       - ALLOW_ALL_TO_NOTIFY
+      - UNKNOWN_ETA_PROMPT_AFTER_MINUTES
 
   scheduler:
     build:

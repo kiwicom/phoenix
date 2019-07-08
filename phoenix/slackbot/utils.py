@@ -45,10 +45,21 @@ def get_absolute_url(rel_url):
     return f"{protocol}://{domain}{rel_url}"
 
 
-def get_system_option():
-    return [
-        {"label": system.name, "value": system.id} for system in System.objects.all()
-    ]
+def get_system_option(sort_by=None):
+    systems = System.objects.all()
+    if sort_by:
+        sort_by = sort_by.lower()
+        top_items = []
+        rest = []
+        for system in systems:
+            if system.name.lower().startswith(sort_by):
+                top_items.append(system)
+            else:
+                rest.append(system)
+        sorted_systems = top_items + rest
+    else:
+        sorted_systems = systems
+    return [{"label": system.name, "value": system.id} for system in sorted_systems]
 
 
 def format_datetime(timestamp):

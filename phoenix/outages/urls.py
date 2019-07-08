@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import permission_required
 from django.urls import path
 
 from .views import (
-    MonitorDetail,
+    MonitorDetail,  # Ignore PyImportSortBear
     MonitorList,
     MonitorUpdateView,
     OutageCreate,

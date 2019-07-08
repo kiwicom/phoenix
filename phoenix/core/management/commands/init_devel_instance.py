@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group, User  # Ignore PyUnusedCodeBear
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 
-from ....slackbot.management.commands.sync_user_groups import (
+from ....slackbot.management.commands.sync_user_groups import (  # Ignore PyImportSortBear
     Command as SyncUserGroupsCommand,
 )
 from ....slackbot.management.commands.sync_users import Command as SyncUsersCommand
