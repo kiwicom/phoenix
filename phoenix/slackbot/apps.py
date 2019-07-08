@@ -16,6 +16,7 @@ class SlackbotConfig(AppConfig):
             join_datadog_channels,
             notify_users,
             sync_user_groups_with_google,
+            notify_communication_assignee,
             notify_users_with_due_date_postmortems,
             generate_after_due_date_issues_report,
             postmortem_notifications,
@@ -29,6 +30,9 @@ class SlackbotConfig(AppConfig):
             timedelta(hours=24), notify_users_with_due_date_postmortems
         )
         celery_app.add_periodic_task(timedelta(hours=1), postmortem_notifications)
+        celery_app.add_periodic_task(
+            timedelta(minutes=1), notify_communication_assignee
+        )
         celery_app.add_periodic_task(timedelta(minutes=1), missing_eta_notify)
 
         celery_app.add_periodic_task(

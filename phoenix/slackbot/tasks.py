@@ -946,6 +946,38 @@ def postmortem_notifications():
                 postmortem_label_notify(solution)
 
 
+def communication_assignee_should_be_notified(outage):
+    now = arrow.now()
+    last_notified = outage.communication_assignee_last_notified
+    if not last_notified:
+        # Before the first notification.
+        last_notified = outage.created
+    seconds_passed = (now - last_notified).total_seconds()
+    return seconds_passed >= settings.NOTIFY_COMMUNICATION_ASSIGNEE_MINUTES * 60
+
+
+@shared_task
+def notify_communication_assignee():
+    for outage in Outage.objects.filter(resolved=False):
+        if communication_assignee_should_be_notified(outage):
+            communication_assignee = outage.communication_assignee
+            user_slack_id = communication_assignee.last_name
+            if not user_slack_id:
+                logger.warning(
+                    f"Unable to retrieve communication assignee slack id for "
+                    "user: {communication_assignee.id}"
+                )
+            notified = notify_user_with_im(
+                user_slack_id,
+                message=f"Please provide an update on this outage: {outage.announcement.permalink}\n"
+                f"As communication assignee, we will ask you every "
+                f"{settings.NOTIFY_COMMUNICATION_ASSIGNEE_MINUTES} minutes to provide an update.",
+            )
+            if notified:
+                outage.communication_assignee_notified()
+                outage.save()
+
+
 def eta_should_be_notified(created):
     """Check if X minutes have elapsed since outage creation."""
     now = arrow.utcnow()
@@ -961,9 +993,7 @@ def missing_eta_notify():
     `UNKNOWN_ETA_PROMPT_AFTER_MINUTES`.
     If ETA has changed in meantime, users shouldn't be prompted.
     """
-    outages = Outage.objects.filter(solution__isnull=True).filter(
-        prompt_for_eta_update=True
-    )
+    outages = Outage.objects.filter(resolved=False).filter(prompt_for_eta_update=True)
     for outage in outages:
         if eta_should_be_notified(outage.created):
             notified_users = []

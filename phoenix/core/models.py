@@ -151,6 +151,10 @@ class AbstractOutage(models.Model):
 
 
 class Outage(AbstractOutage):
+    # If outage isn't resolved ping communication assignee every X minutes.
+    # This field holds the time of the last ping.
+    communication_assignee_last_notified = models.DateTimeField(null=True, blank=True)
+
     # If no ETA, phoenix will ask assignee for ETA update after X minutes.
     # This attribute should only be set to True if new outage has not been provided
     # with ETA. In case of edit or some other change of ETA this should be False.
@@ -158,11 +162,15 @@ class Outage(AbstractOutage):
     # User should be prompted for ETA update only if ETA wasn't known at the time of
     # announcement creation.
     prompt_for_eta_update = models.BooleanField(default=True)
+
     # If false users won't be able to change ETA using the prompt menu
     prompt_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Outage {self.id}"
+
+    def communication_assignee_notified(self):
+        self.communication_assignee_last_notified = arrow.now().datetime
 
     @property
     def is_resolved(self):

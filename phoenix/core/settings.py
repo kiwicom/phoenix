@@ -261,3 +261,8 @@ UNKNOWN_ETA_PROMPT_AFTER_MINUTES = int(
 ALLOW_ALL_TO_NOTIFY = distutils.util.strtobool(
     os.getenv("ALLOW_ALL_TO_NOTIFY", "False")
 )
+
+# If outage isn't resolved ping communication assignee every X minutes.
+NOTIFY_COMMUNICATION_ASSIGNEE_MINUTES = int(
+    os.getenv("NOTIFY_COMMUNICATION_ASSIGNEE_MINUTES", "30")
+)
