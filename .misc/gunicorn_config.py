@@ -1,7 +1,7 @@
 """Link to docs: http://docs.gunicorn.org/en/stable/settings.html"""
-import multiprocessing
+import os
 
-workers = multiprocessing.cpu_count() * 2 + 1
+workers = os.environ.get("WEB_CONCURRENCY", 4)
 
 bind = ":8000"
 
