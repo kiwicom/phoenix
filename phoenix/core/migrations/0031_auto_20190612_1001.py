@@ -3,9 +3,16 @@
 from django.db import migrations, models
 
 
+def init_resolved_field(apps, schema_editor):
+    Outage = apps.get_model("core", "Outage")
+    for outage in Outage.objects.filter(solution__isnull=False):
+        outage.resolved = True
+        outage.save()
+
+
 class Migration(migrations.Migration):
 
-    dependencies = [("core", "0029_auto_20190521_0802")]
+    dependencies = [("core", "0030_outage_communication_assignee_last_notified")]
 
     operations = [
         migrations.AddField(
@@ -18,4 +25,5 @@ class Migration(migrations.Migration):
             name="resolved",
             field=models.BooleanField(default=False),
         ),
+        migrations.RunPython(init_resolved_field),
     ]
