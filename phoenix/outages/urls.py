@@ -12,6 +12,7 @@ from .views import (
     OutageUpdate,
     SolutionCreate,
     SolutionUpdate,
+    reopen_outage,
 )
 
 if settings.ALLOW_ALL_TO_NOTIFY:
@@ -37,4 +38,5 @@ urlpatterns = [
         SolutionUpdate.as_view(),
         name="outage_solution_update",
     ),
+    path("<int:pk>/reopen_outage", reopen_outage, name="reopen_outage"),
 ]

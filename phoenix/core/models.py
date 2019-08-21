@@ -182,6 +182,10 @@ class Outage(AbstractOutage):
             return False
 
     @property
+    def is_reopened(self):
+        return self.solution is not None and not self.resolved
+
+    @property
     def resolved_on_time(self):
         now = arrow.utcnow()
         solution = self.is_resolved

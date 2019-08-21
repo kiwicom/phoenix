@@ -1,10 +1,12 @@
 from datetime import datetime
 
 import arrow
-from django.http import Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden, HttpResponseBadRequest
 from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.shortcuts import redirect
+from rest_framework.decorators import api_view
 
 from ..core.models import Monitor, Outage, Solution
 from ..core.utils import user_can_modify_outage
@@ -124,6 +126,7 @@ class SolutionAbstract(CreateView):
 
     def form_valid(self, form):
         outage_id = self.kwargs["pk"]
+        form.modified_by = self.request.user
         form.instance.outage_id = outage_id
         form.instance.created_by = self.request.user
         return super().form_valid(form)
@@ -185,6 +188,20 @@ class SolutionUpdate(SolutionAbstract, UpdateView):
         ):
             return HttpResponseForbidden()
         return super().post(request, args, kwargs)
+
+
+@api_view(["GET"])
+def reopen_outage(request, pk):
+    try:
+        outage = Outage.objects.get(id=pk)
+    except Outage.DoesNotExist:
+        raise Http404("Outage doesn't exist.")
+    if outage.is_resolved:
+        outage.resolved = False
+        outage.save(modified_by=request.user)
+    else:
+        return HttpResponseBadRequest("Can't reopen unresolved outage.")
+    return redirect("outage_detail", pk=pk)
 
 
 class MonitorList(ListView):

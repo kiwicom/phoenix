@@ -59,6 +59,17 @@ class SolutionCreateForm(ModelForm):
         widgets = {"resolved_at": DateTimeInput()}
         labels = {"report_url": "Report URL"}
 
+    def save(self, commit=True):
+        m = super().save(commit=False)
+
+        # Set outage.resolved for proper resolution
+        m.outage.resolved = True
+
+        if commit:
+            m.save(modified_by=self.modified_by)
+            m.outage.save(modified_by=self.modified_by)
+        return m
+
 
 class MonitorUpdate(ModelForm):
     class Meta:

@@ -128,8 +128,8 @@
 </div>
 
 {% if user_can_modify %}
-            {% if not object.is_resolved %}
-                <a href="{% url 'outage_resolve' pk=object.pk %}">
+            {% if object.is_reopened %}
+                <a href="{% url 'outage_solution_update' pk=object.pk %}">
                     <button class="inner-corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
                         <i class="material-icons">done_outline</i>
                     </button>
@@ -139,10 +139,26 @@
                         <i class="material-icons">mode_edit</i>
                     </button>
                 </a>
-            {% else %}
-                <a href="{% url 'outage_solution_update' pk=object.pk %}">
+            {% elif not object.is_resolved %}
+                <a href="{% url 'outage_resolve' pk=object.pk %}">
+                    <button class="inner-corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
+                        <i class="material-icons">done_outline</i>
+                    </button>
+                </a>
+                <a href="{% url 'outage_update' pk=object.pk %}">
                     <button class="corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
                         <i class="material-icons">mode_edit</i>
+                    </button>
+                </a>
+            {% else %}
+                <a href="{% url 'outage_solution_update' pk=object.pk %}">
+                    <button class="inner-corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
+                        <i class="material-icons">mode_edit</i>
+                    </button>
+                </a>
+                <a href="{% url 'reopen_outage' pk=object.pk %}">
+                    <button class="corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
+                        <i class="material-icons">loop</i>
                     </button>
                 </a>
             {% endif %}

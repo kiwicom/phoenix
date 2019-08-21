@@ -146,15 +146,17 @@ class CommentBase:
         return "\n".join(self.slack_comments), " ".join(self.html_comments)
 
     def post_comments(self, slack_comment, html_comment, icon_url=None, username=None):
-        resp = add_comment(
-            self.outage.announcement.message_ts,
-            self.outage.announcement.channel_id,
-            slack_comment,
-            icon_url=icon_url,
-            username=username,
-        )
-        if resp["ok"]:
-            self.outage.add_notification(html_comment, self.modified_by)
+        if self.outage.announce_on_slack:
+            resp = add_comment(
+                self.outage.announcement.message_ts,
+                self.outage.announcement.channel_id,
+                slack_comment,
+                icon_url=icon_url,
+                username=username,
+            )
+            if not resp["ok"]:
+                logger.error(f"Posting comment on slack failed: {resp}")
+        self.outage.add_notification(html_comment, self.modified_by)
 
     def add_modified_by(self):
         self.slack_comments.append(f"by {format_user_for_slack(self.modified_by)}")
