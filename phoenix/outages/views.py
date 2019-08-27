@@ -72,7 +72,7 @@ class OutageUpdate(UpdateView):
         initial = super().get_initial()
         initial["communication_assignee"] = self.object.communication_assignee
         initial["solution_assignee"] = self.object.solution_assignee
-        initial["eta"] = self.object.eta_remaining
+        initial["eta"] = self.object.eta
         return initial
 
     def get_success_url(self):
@@ -82,18 +82,6 @@ class OutageUpdate(UpdateView):
         form.modified_by = self.request.user
         form.eta_last_modified = timezone.now()
         return super().form_valid(form)
-
-    def get_form(self, form_class=None):
-        """Return an instance of the form to be used in this view."""
-        if form_class is None:
-            form_class = self.get_form_class()
-        # Create resolved_at field from datepicker and timepicker values.
-        kwargs = self.get_form_kwargs()
-        if kwargs.get("data") and not kwargs["data"]["eta"]:
-            # If saving new data into form.
-            kwargs["data"] = kwargs["data"].copy()  # Change QueryDict to mutable.
-            kwargs["data"]["eta"] = 0
-        return form_class(**kwargs)
 
     def get(self, request, *args, **kwargs):
         if not user_can_modify_outage(self.request.user.id, self.kwargs["pk"]):

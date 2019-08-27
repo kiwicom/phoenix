@@ -220,7 +220,13 @@ class OutageComment(CommentBase):
 
     def generate_comments(self):
         self.process_more_info()  # Always add more info as first
-        fields = ["eta", "assignees", "sales_affected_choice", "sales_affected"]
+        fields = [
+            "eta",
+            "assignees",
+            "sales_affected_choice",
+            "lost_bookings_choice",
+            "lost_bookings",
+        ]
         self.add_comments(fields)
 
     def process_more_info(self):
@@ -241,30 +247,10 @@ class OutageComment(CommentBase):
         self.slack_comments.append(comment)
         self.html_comments.append(comment)
 
-    def _eta_changed(self):
-        """Hack-FIX for ETA change."""
-        eta_unknown_change = (
-            not self.current_version.eta_is_unknown
-            == self.previous_version.eta_is_unknown
-        )
-        eta_change = (
-            abs(
-                self.current_version.real_eta_in_minutes
-                - self.previous_version.real_eta_in_minutes
-            )
-            >= 2
-        )
-        return eta_unknown_change or eta_change
-
     def _add_eta_comment(self):
-        comment = "ETA changed to {deadline} (UTC)."
-        slack_eta = format_datetime(self.current_version.eta_deadline)
-        html_eta = format_outage_datetime(self.current_version.eta_human_deadline)
-        if self.current_version.eta_is_unknown:
-            html_eta = slack_eta = "Unknown"
-
-        self.slack_comments.append(comment.format(deadline=slack_eta))
-        self.html_comments.append(comment.format(deadline=html_eta))
+        comment = f"ETA changed to {self.outage.eta} (UTC)."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
 
     def _assignees_changed(self):
         """Check if curent and previous assignees differ.
@@ -533,8 +519,10 @@ def add_comment(message_ts, channel_id, comment, icon_url=None, username=None):
 @shared_task
 def notify_users():
     now = arrow.utcnow().shift(minutes=settings.NOTIFY_BEFORE_ETA)
-    for outage in Outage.objects.filter(resolved=False).exclude(eta=0):
-        # notify only if eta is known (eta=0 => unknown)
+    for outage in Outage.objects.filter(resolved=False):
+        eta_deadline = outage.eta_deadline
+        if not eta_deadline:
+            continue
         if arrow.get(outage.eta_deadline) < now:
             announcement = outage.announcement
             assignees = outage.get_involved_users()
@@ -550,7 +538,7 @@ def notify_users():
 
                 if user_slack_id in notified:
                     continue
-                formated_eta = format_datetime(outage.eta_deadline)
+                formated_eta = format_datetime(outage.eta_deadline.timestamp)
                 notify_user_with_im(
                     user_slack_id,
                     attachments=[
@@ -978,72 +966,3 @@ def notify_communication_assignee():
             if notified:
                 outage.communication_assignee_notified()
                 outage.save()
-
-
-def eta_should_be_notified(created):
-    """Check if X minutes have elapsed since outage creation."""
-    now = arrow.utcnow()
-    elapsed_minutes = divmod((now - created).seconds, 60)[0]
-    return elapsed_minutes >= settings.UNKNOWN_ETA_PROMPT_AFTER_MINUTES
-
-
-@shared_task
-def missing_eta_notify():
-    """Prompt user for ETA update.
-
-    If ETA hasn't been provided at announcement creation prompt users for update after
-    `UNKNOWN_ETA_PROMPT_AFTER_MINUTES`.
-    If ETA has changed in meantime, users shouldn't be prompted.
-    """
-    outages = Outage.objects.filter(resolved=False).filter(prompt_for_eta_update=True)
-    for outage in outages:
-        if eta_should_be_notified(outage.created):
-            notified_users = []
-            users = outage.get_involved_users()
-            for user in users:
-                if user.id in notified_users:
-                    continue
-                user_slack_id = user.last_name
-                if not user_slack_id:
-                    logger.warning(
-                        f"Unable to send ETA update prompt to user {user.email} "
-                        f"because slack id is unknown"
-                    )
-                res = notify_user_with_im(
-                    user_slack_id,
-                    attachments=[
-                        {
-                            "callback_id": f"{outage.id}",
-                            "fallback": f"Can you provide an ETA for {outage.announcement.permalink}?",
-                            "color": "danger",
-                            "title": f"{outage.systems_affected_human} incident",
-                            "attachment_type": "default",
-                            "title_link": outage.announcement.permalink,
-                            "text": "Can you provide an ETA?",
-                            "actions": [
-                                {
-                                    "text": "Still no ETA",
-                                    "name": "set_eta",
-                                    "type": "button",
-                                    "value": "0",
-                                },
-                                {
-                                    "text": "5 minutes",
-                                    "name": "set_eta",
-                                    "type": "button",
-                                    "value": "5",
-                                },
-                                {
-                                    "text": "15 minutes",
-                                    "name": "set_eta",
-                                    "type": "button",
-                                    "value": "15",
-                                },
-                            ],
-                        }
-                    ],
-                )
-                if res:
-                    notified_users.append(user.id)
-                    outage.prompt_for_eta_update = False
-                    outage.save()

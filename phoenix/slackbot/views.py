@@ -61,6 +61,12 @@ SALES_AFFECTED_CHOICE_OPT_SOLUTION = [
     option for option in SALES_AFFECTED_CHOICE_OPT if option["value"] != Outage.UNKNOWN
 ]
 CHECKBOX_OPT = [{"value": 1, "label": "Yes"}, {"value": 0, "label": "No"}]
+ETA_CHOICE_OPT = [
+    {"value": option[0], "label": option[1]} for option in Outage.ETA_CHOICES
+]
+LOST_BOOKINGS_CHOICE_OPT = [
+    {"value": option[0], "label": option[1]} for option in Outage.LOST_BOOKINGS_CHOICES
+]
 
 
 def get_handler(event_type):
@@ -305,6 +311,14 @@ def announce(request):
     logger.debug(data)
     trigger_id = data.get("trigger_id")
 
+    summary_template = (
+        "WHO: [customers/employees/partners/….]\n"
+        "are not able to\n"
+        "HOW: [fully/partially/…]\n"
+        "WHAT: [book/search/….]\n"
+        "BECAUSE: [whatever reason + details]"
+    )
+
     slack_client.api_call(
         "dialog.open",
         trigger_id=trigger_id,
@@ -319,6 +333,7 @@ def announce(request):
                     "name": "summary",
                     "type": "textarea",
                     "hint": "Provide outage description.",
+                    "value": summary_template,
                 },
                 {
                     "label": "Sales affected",
@@ -330,19 +345,17 @@ def announce(request):
                 },
                 {
                     "label": "Lost bookings",
-                    "type": "text",
-                    "name": "lost_bookings",
-                    "subtype": "number",
-                    "optional": True,
-                    "hint": "Specify how many bookings have been lost if any (e.g. 100).",
+                    "type": "select",
+                    "name": "lost_bookings_choice",
+                    "hint": "Specify lost bookings.",
+                    "options": LOST_BOOKINGS_CHOICE_OPT,
                 },
                 {
-                    "label": "Impact on turnover",
+                    "label": "Lost bookings details",
                     "type": "text",
-                    "name": "impact_on_turnover",
-                    "subtype": "number",
+                    "name": "lost_bookings",
                     "optional": True,
-                    "hint": "Specify impact on turnover in EUR, if any (e.g. 1000).",
+                    "hint": "Optionally provide details for lost bookings.",
                 },
                 {
                     "label": "Primary affected system",
@@ -352,12 +365,10 @@ def announce(request):
                     "hint": "Select primary affected system.",
                 },
                 {
-                    "type": "text",
                     "label": "ETA",
                     "name": "eta",
-                    "subtype": "number",
-                    "hint": "ETA in minutes. Leave empty if unknown.",
-                    "optional": True,
+                    "type": "select",
+                    "options": ETA_CHOICE_OPT,
                 },
             ],
         },
@@ -422,13 +433,18 @@ class InteractiveMesssageHandler:
             "notify_on_cancel": True,
             "elements": [
                 {
-                    "type": "text",
+                    "label": "What happened?",
+                    "name": "summary",
+                    "type": "textarea",
+                    "hint": "Provide outage description.",
+                    "value": self.outage.summary,
+                },
+                {
                     "label": "ETA",
                     "name": "eta",
-                    "subtype": "number",
-                    "value": self.outage.eta_remaining,
-                    "hint": "ETA in minutes. Leave empty if unknown.",
-                    "optional": True,
+                    "type": "select",
+                    "options": ETA_CHOICE_OPT,
+                    "value": self.outage.eta,
                 },
                 {
                     "label": "Sales affected",
@@ -440,21 +456,19 @@ class InteractiveMesssageHandler:
                 },
                 {
                     "label": "Lost bookings",
-                    "type": "text",
-                    "name": "lost_bookings",
-                    "subtype": "number",
-                    "optional": True,
-                    "value": self.outage.lost_bookings,
-                    "hint": "Specify how many bookings have been lost if any (e.g. 100).",
+                    "type": "select",
+                    "name": "lost_bookings_choice",
+                    "hint": "Specify lost bookings.",
+                    "options": LOST_BOOKINGS_CHOICE_OPT,
+                    "value": self.outage.lost_bookings_choice,
                 },
                 {
-                    "label": "Impact on turnover",
+                    "label": "Lost bookings details",
                     "type": "text",
-                    "name": "impact_on_turnover",
-                    "subtype": "number",
+                    "name": "lost_bookings",
                     "optional": True,
-                    "value": self.outage.impact_on_turnover,
-                    "hint": "Specify impact on turnover in EUR, if any (e.g. 1000).",
+                    "value": self.outage.lost_bookings,
+                    "hint": "Optionally provide details for lost bookings.",
                 },
                 {
                     "label": "Reason for this change?",
@@ -533,12 +547,19 @@ class InteractiveMesssageHandler:
                 },
                 {
                     "label": "Lost bookings",
+                    "type": "select",
+                    "name": "lost_bookings_choice",
+                    "hint": "Specify lost bookings.",
+                    "options": LOST_BOOKINGS_CHOICE_OPT,
+                    "value": self.outage.lost_bookings_choice,
+                },
+                {
+                    "label": "Lost bookings details",
                     "type": "text",
                     "name": "lost_bookings",
-                    "subtype": "number",
                     "optional": True,
                     "value": self.outage.lost_bookings,
-                    "hint": "Specify how many bookings have been lost if any (e.g. 100).",
+                    "hint": "Optionally provide details for lost bookings.",
                 },
                 {
                     "label": "Impact on turnover",
@@ -629,12 +650,19 @@ class InteractiveMesssageHandler:
                 },
                 {
                     "label": "Lost bookings",
+                    "type": "select",
+                    "name": "lost_bookings_choice",
+                    "hint": "Specify lost bookings.",
+                    "options": LOST_BOOKINGS_CHOICE_OPT,
+                    "value": self.outage.lost_bookings_choice,
+                },
+                {
+                    "label": "Lost bookings details",
                     "type": "text",
                     "name": "lost_bookings",
-                    "subtype": "number",
                     "optional": True,
                     "value": self.outage.lost_bookings,
-                    "hint": "Specify how many bookings have been lost if any (e.g. 100).",
+                    "hint": "Optionally provide details for lost bookings.",
                 },
                 {
                     "label": "Impact on turnover",
@@ -729,30 +757,6 @@ class InteractiveMesssageHandler:
             ],
         }
 
-    def set_eta(self):
-        """Use for ETA update prompt."""
-        if not self.outage.prompt_active:
-            data = slack_bot_client.api_call(
-                "chat.delete",
-                channel=self.payload["channel"]["id"],
-                ts=self.payload["message_ts"],
-            )
-            if not data["ok"]:
-                logger.error(f"ETA prompt update error: {data}")
-            return
-        new_eta = int(self.action["value"])
-        self.outage.set_eta(new_eta)
-        self.outage.prompt_active = False
-        self.outage.save(modified_by=self.actor)
-
-        data = slack_bot_client.api_call(
-            "chat.delete",
-            channel=self.payload["channel"]["id"],
-            ts=self.payload["message_ts"],
-        )
-        if not data["ok"]:
-            logger.error(f"ETA prompt update error: {data}")
-
     def reopen_outage(self):
         self.outage.resolved = False
         self.outage.save(modified_by=self.actor)
@@ -786,29 +790,7 @@ class DialogSubmissionHandler:
                 return data
 
     def edit(self):
-        eta = self.dialog_data.get("eta")
-        lost_bookings = self.dialog_data.get("lost_bookings")
         impact_on_turnover = self.dialog_data.get("impact_on_turnover")
-        if eta:
-            try:
-                int(eta)
-            except ValueError:
-                self.errors.append(
-                    {
-                        "name": "eta",
-                        "error": "Invalid format. Specify ETA in minutes (for example: 30).",
-                    }
-                )
-        if lost_bookings:
-            try:
-                int(lost_bookings)
-            except ValueError:
-                self.errors.append(
-                    {
-                        "name": "lost_bookings",
-                        "error": "Invalid format. Needs to be specified as number (e.g. 1000).",
-                    }
-                )
         if impact_on_turnover:
             try:
                 int(impact_on_turnover)
@@ -823,10 +805,12 @@ class DialogSubmissionHandler:
             return
 
         outage = Outage.objects.get(id=self.obj)
-        outage.set_eta(eta)
+        outage.summary = self.dialog_data.get("summary")
+        outage.set_eta(self.dialog_data.get("eta"))
         change_desc = self.dialog_data.get("more_info", 0)
         outage.sales_affected_choice = self.dialog_data.get("sales_affected_choice")
-        outage.lost_bookings = lost_bookings
+        outage.lost_bookings = self.dialog_data.get("lost_bookings")
+        outage.lost_bookings_choice = self.dialog_data.get("lost_bookings_choice")
         outage.impact_on_turnover = impact_on_turnover
         outage.save(change_desc=change_desc, modified_by=self.actor)
 
@@ -839,29 +823,7 @@ class DialogSubmissionHandler:
         outage.save(modified_by=self.actor)
 
     def new(self):
-        eta = self.dialog_data.get("eta")
-        lost_bookings = self.dialog_data.get("lost_bookings")
         impact_on_turnover = self.dialog_data.get("impact_on_turnover")
-        if eta:
-            try:
-                int(eta)
-            except ValueError:
-                self.errors.append(
-                    {
-                        "name": "eta",
-                        "error": "Invalid format. Specify ETA in minutes (for example: 30).",
-                    }
-                )
-        if lost_bookings:
-            try:
-                int(lost_bookings)
-            except ValueError:
-                self.errors.append(
-                    {
-                        "name": "lost_bookings",
-                        "error": "Invalid format. Needs to be specified as number (e.g. 1000).",
-                    }
-                )
         if impact_on_turnover:
             try:
                 int(impact_on_turnover)
@@ -879,10 +841,11 @@ class DialogSubmissionHandler:
             summary=self.dialog_data.get("summary"),
             created_by=self.request.user,
             sales_affected_choice=self.dialog_data.get("sales_affected_choice"),
-            lost_bookings=lost_bookings,
+            lost_bookings=self.dialog_data.get("lost_bookings"),
+            lost_bookings_choice=self.dialog_data.get("lost_bookings_choice"),
             impact_on_turnover=impact_on_turnover,
         )
-        outage.set_eta(eta)
+        outage.set_eta(self.dialog_data.get("eta"))
         affected_system = self.dialog_data.get("affected_system")
         outage.set_system_affected(affected_system)
         outage.save()
@@ -890,7 +853,6 @@ class DialogSubmissionHandler:
     def resolve(self):
         outage = Outage.objects.get(id=self.obj)
         user_tz = self.request.user.profile.timezone
-        lost_bookings = self.dialog_data.get("lost_bookings")
         impact_on_turnover = self.dialog_data.get("impact_on_turnover")
         try:
             # TODO: fix midnight
@@ -900,16 +862,6 @@ class DialogSubmissionHandler:
             resolved_at = resolved_at_to_utc(resolved_at, user_tz)
         except (ValueError, arrow.parser.ParserError):
             self.errors.append({"name": "real_downtime", "error": "Invalid format."})
-        if lost_bookings:
-            try:
-                int(lost_bookings)
-            except ValueError:
-                self.errors.append(
-                    {
-                        "name": "lost_bookings",
-                        "error": "Invalid format. Needs to be specified as number (e.g. 1000).",
-                    }
-                )
         if impact_on_turnover:
             try:
                 int(impact_on_turnover)
@@ -927,9 +879,9 @@ class DialogSubmissionHandler:
         solution.summary = self.dialog_data.get("summary")
         solution.suggested_outcome = self.dialog_data.get("outcome")
         outage.sales_affected_choice = self.dialog_data.get("sales_affected_choice")
-        outage.lost_bookings = lost_bookings
+        outage.lost_bookings = self.dialog_data.get("lost_bookings")
+        outage.lost_bookings_choice = self.dialog_data.get("lost_bookings_choice")
         outage.impact_on_turnover = impact_on_turnover
-        outage.prompt_for_eta_update = False
 
         if not outage.resolved:
             outage.resolved = True
@@ -939,18 +891,7 @@ class DialogSubmissionHandler:
     def editsolved(self):  # Ignore RadonBear
         outage = Outage.objects.get(id=self.obj)
         solution = outage.solution
-        lost_bookings = self.dialog_data.get("lost_bookings")
         impact_on_turnover = self.dialog_data.get("impact_on_turnover")
-        if lost_bookings:
-            try:
-                int(lost_bookings)
-            except ValueError:
-                self.errors.append(
-                    {
-                        "name": "lost_bookings",
-                        "error": "Invalid format. Needs to be specified as number (e.g. 1000).",
-                    }
-                )
         if impact_on_turnover:
             try:
                 int(impact_on_turnover)
@@ -976,7 +917,8 @@ class DialogSubmissionHandler:
             elif not title and solution.report_title:
                 solution.report_title = ""
         outage.sales_affected_choice = self.dialog_data.get("sales_affected_choice")
-        outage.lost_bookings = lost_bookings
+        outage.lost_bookings = self.dialog_data.get("lost_bookings")
+        outage.lost_bookings_choice = self.dialog_data.get("lost_bookings_choice")
         outage.impact_on_turnover = impact_on_turnover
         outage.save(modified_by=self.actor)
         solution.save(modified_by=self.actor)

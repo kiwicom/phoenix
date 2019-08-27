@@ -20,7 +20,6 @@ class SlackbotConfig(AppConfig):
             notify_users_with_due_date_postmortems,
             generate_after_due_date_issues_report,
             postmortem_notifications,
-            missing_eta_notify,
         )
 
         celery_app.add_periodic_task(timedelta(minutes=20), notify_users)
@@ -33,7 +32,6 @@ class SlackbotConfig(AppConfig):
         celery_app.add_periodic_task(
             timedelta(minutes=1), notify_communication_assignee
         )
-        celery_app.add_periodic_task(timedelta(minutes=1), missing_eta_notify)
 
         celery_app.add_periodic_task(
             crontab(day_of_week=1, hour=1, minute=0),

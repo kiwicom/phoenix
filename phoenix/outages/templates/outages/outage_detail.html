@@ -15,12 +15,7 @@
             <p>
                 Time until deadline: 
                 <span class="status-time status-time-unresolved">
-                    {% if object.eta_is_unknown %}
-                        N/A
-                    {% else %}
-                        {{ object.eta_remaining }}
-                    {% endif %}
-                    minutes
+                    {{ object.eta_remaining }} minutes
                 </span>
             </p>
         {% endif %}
@@ -29,7 +24,7 @@
     <div id="details-left">
         <div class="details-item">
             <label class="details-item-name">ETA</label>
-            <p class="details-item-value timestamp-transform">{{ object.eta_deadline }}</p>
+            <p class="details-item-value">{{ object.eta }}</p>
         </div>
         <div class="details-item">
                 <label class="details-item-name">Started at</label>

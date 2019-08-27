@@ -101,13 +101,6 @@ class BaseMessage:
     def generate_specific(self, attachment):
         raise NotImplementedError
 
-    def get_formatted_sales(self):
-        """Return sales affected formatted for slack."""
-        msg = f"{self.outage.sales_affected_choice_human.capitalize()}."
-        if self.outage.sales_affected:
-            msg += f" {self.outage.sales_affected}"
-        return msg
-
     def get_formatted_assigneess(self):
         """Return assignees formated for slack."""
         solution_assignee = utils.format_user_for_slack(self.outage.solution_assignee)
@@ -148,6 +141,13 @@ class SolutionMessage(BaseMessage):
         if days:
             duration = f"{days}d " + duration
         return duration
+
+    def get_formatted_sales(self):
+        """Return sales affected formatted for slack."""
+        msg = f"{self.outage.sales_affected_choice_human.capitalize()}."
+        if self.outage.sales_affected:
+            msg += f" {self.outage.sales_affected}"
+        return msg
 
     def add_fields(self, attachment):
         attachment["fields"] = [
@@ -192,18 +192,19 @@ class OutageMessage(BaseMessage):
         super().__init__(outage, announcement)
         self.color = "danger"
 
+    def get_formatted_sales(self):
+        """Return sales affected formatted for slack."""
+        msg = f"{self.outage.sales_affected_choice_human.capitalize()}."
+        msg += f" {self.outage.lost_bookings_human()}"
+        return msg
+
     def add_fields(self, attachment):
-        if self.outage.eta_is_unknown:
-            if self.outage.prompt_active:
-                eta_value = "We will try to get you eta in 10 minutes"
-            else:
-                eta_value = "Unknown"
-        else:
-            eta_value = utils.format_datetime(self.outage.eta_deadline)
         attachment["fields"] = [
             slack_field("sales", value=self.get_formatted_sales()),
             slack_field("assigneess", value=self.get_formatted_assigneess()),
-            slack_field("eta", value=eta_value),
+            slack_field(
+                "eta", value=f"\u200a{self.outage.eta}"
+            ),  # NOTE: \u200a is used to properly display symbol ">"
         ]
         return attachment
 

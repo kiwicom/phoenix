@@ -1,4 +1,5 @@
 import logging
+import re
 
 import arrow
 from django.conf import settings
@@ -11,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 USER_MODEL = settings.AUTH_USER_MODEL
+
+ETA_PARSE_RE = re.compile(r"(?P<symbol>[<>]?)(?P<value>\d+)(?P<granularity>\w{1})")
 
 
 class Profile(models.Model):
@@ -43,6 +46,24 @@ class AbstractOutage(models.Model):
     UNKNOWN = "UN"
     SALES_AFFECTED_CHOICES = ((YES, "yes"), (NO, "no"), (UNKNOWN, "unknown"))
 
+    ETA_CHOICES = (
+        ("<30m", "<30m"),
+        ("<2h", "<2h"),
+        ("<8h", "<8h"),
+        ("<24h", "<24h"),
+        (
+            ">24h",
+            ">24h",
+        ),  # symbol ">" will be evaluated as unknown ETA in eta_in_minutes
+    )
+    LOST_BOOKINGS_CHOICES = (
+        ("0%", "0%"),
+        ("<30%", "<30%"),
+        ("<60%", "<60%"),
+        ("<100%", "<100%"),
+        ("100%", "100%"),
+    )
+
     summary = models.TextField(null=False, blank=False, max_length=3000)
     systems_affected = models.ForeignKey(
         System, null=True, related_name="systems_%(class)s", on_delete=models.CASCADE
@@ -66,12 +87,13 @@ class AbstractOutage(models.Model):
     # Keeping field sales_affected for compatibility reasons. This field will also be filled with data from fields
     # lost_bookings and impact_on_turnover.
     sales_affected = models.TextField(max_length=3000, null=True, blank=True)
-    lost_bookings = models.IntegerField(null=True, blank=True)
+    lost_bookings = models.TextField(max_length=3000, null=True, blank=True)
+    lost_bookings_choice = models.CharField(
+        choices=LOST_BOOKINGS_CHOICES, max_length=5, null=False, blank=False
+    )
     impact_on_turnover = models.IntegerField(null=True, blank=True)
 
-    # Never set ETA manually. Use helper methods "set_eta" and "real_eta"
-    # for proper representation.
-    eta = models.IntegerField(null=False, blank=True, default=0)
+    eta = models.CharField(choices=ETA_CHOICES, max_length=6, null=False, blank=False)
     eta_last_modified = models.DateTimeField(null=True)
 
     # Needed for re-open outage functionality
@@ -97,55 +119,6 @@ class AbstractOutage(models.Model):
         return self.systems_affected.name or "N/A"
 
     @property
-    def real_eta(self):
-        """Get properly represented ETA.
-
-        Adds difference between last eta modification and outage creation
-        date in minutes to ETA.
-        """
-        if self.eta_last_modified and not self.eta_is_unknown:
-            delta = self.eta_last_modified - self.created
-            minutes, seconds = divmod(delta.seconds, 60)
-            return minutes + self.eta, seconds
-
-        return self.eta, 0
-
-    @property
-    def _eta_deadline(self):
-        created = arrow.get(self.created)
-        minutes, seconds = self.real_eta
-        return created.shift(minutes=minutes, seconds=seconds)
-
-    @property
-    def eta_deadline(self):
-        return self._eta_deadline.timestamp
-
-    @property
-    def eta_human_deadline(self):
-        return self._eta_deadline.datetime
-
-    @property
-    def eta_is_unknown(self):
-        return self.eta == 0
-
-    @property
-    def real_eta_in_minutes(self):
-        return self.real_eta[0]
-
-    @property
-    def eta_remaining(self):
-        """Calculate remaining ETA from now in minutes."""
-        if self.eta_is_unknown:
-            return ""
-        deadline = self.eta_human_deadline
-        if deadline < timezone.now():
-            return 0
-
-        delta = deadline - timezone.now()
-        minutes, _ = divmod(delta.seconds, 60)
-        return minutes
-
-    @property
     def created_timestamp(self):
         return int(self.created.timestamp())
 
@@ -154,17 +127,6 @@ class Outage(AbstractOutage):
     # If outage isn't resolved ping communication assignee every X minutes.
     # This field holds the time of the last ping.
     communication_assignee_last_notified = models.DateTimeField(null=True, blank=True)
-
-    # If no ETA, phoenix will ask assignee for ETA update after X minutes.
-    # This attribute should only be set to True if new outage has not been provided
-    # with ETA. In case of edit or some other change of ETA this should be False.
-    #
-    # User should be prompted for ETA update only if ETA wasn't known at the time of
-    # announcement creation.
-    prompt_for_eta_update = models.BooleanField(default=True)
-
-    # If false users won't be able to change ETA using the prompt menu
-    prompt_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Outage {self.id}"
@@ -185,33 +147,48 @@ class Outage(AbstractOutage):
     def is_reopened(self):
         return self.solution is not None and not self.resolved
 
-    @property
-    def resolved_on_time(self):
-        now = arrow.utcnow()
-        solution = self.is_resolved
-        if solution:
-            if solution.created > self.eta_human_deadline:
-                return False
-            return True
-
-        if self.eta_human_deadline < now:
-            return False
-        return True
-
     def set_eta(self, eta):
         """Properly sets eta. Never change eta manually.
 
         This method will set eta and eta_last_modifie values.
         Both are needed for proper representation.
         """
-        if not eta:
-            # check because slack can return null
-            eta = 0
-        self.eta_last_modified = timezone.now()
         self.eta = eta
-        if eta:
-            self.prompt_for_eta_update = False
-            self.prompt_active = False
+        self.eta_last_modified = timezone.now()
+
+    @property
+    def eta_in_minutes(self):
+        granularity_table = {"m": 1, "h": 60}
+        m = ETA_PARSE_RE.match(self.eta)
+        value = m.groupdict()["value"]
+        granularity = m.groupdict()["granularity"]
+        symbol = m.groupdict()["symbol"]
+        if symbol == ">":
+            # symbol ">" is only used for last value that is represented as unknown ETA
+            return None
+        x = granularity_table[granularity]
+        return int(value) * x
+
+    @property
+    def eta_deadline(self):
+        eta_in_minutes = self.eta_in_minutes
+        if not eta_in_minutes:
+            return ""
+        eta_last_modified = arrow.get(self.eta_last_modified)
+        return eta_last_modified.shift(minutes=eta_in_minutes)
+
+    @property
+    def eta_remaining(self):
+        """Calculate remaining ETA from now in minutes."""
+        eta_deadline = self.eta_deadline
+        if not eta_deadline:
+            return ""
+        delta = eta_deadline - arrow.utcnow()
+        minutes = delta.total_seconds() // 60
+        minutes = int(minutes)
+        if minutes <= 0:
+            return 0
+        return minutes
 
     def _make_assignee(self, user_last_name, column="solution_assignee"):
         if not user_last_name:
@@ -252,10 +229,19 @@ class Outage(AbstractOutage):
         """Check if user is linked to outage."""
         return user_id in self.get_involved_user_ids()
 
+    def lost_bookings_human(self):
+        msg = f"{self.lost_bookings_choice} lost bookings"
+        if self.lost_bookings:
+            msg += f", {self.lost_bookings}"
+        msg += "."
+        return msg
+
+    def impact_on_turnover_human(self):
+        return f"{self.impact_on_turnover or 'N/A'} EUR impact on turnover."
+
     def fill_sales_affected(self):
         self.sales_affected = (
-            f"{self.lost_bookings or 'N/A'} lost bookings, "
-            f"{self.impact_on_turnover or 'N/A'} EUR impact on turnover"
+            f"{self.lost_bookings_human()} {self.impact_on_turnover_human()}"
         )
 
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
@@ -282,6 +268,7 @@ class Outage(AbstractOutage):
             sales_affected_choice=self.sales_affected_choice,
             sales_affected=self.sales_affected,
             lost_bookings=self.lost_bookings,
+            lost_bookings_choice=self.lost_bookings_choice,
             impact_on_turnover=self.impact_on_turnover,
             communication_assignee=self.communication_assignee,
             solution_assignee=self.solution_assignee,
@@ -412,7 +399,7 @@ class Solution(AbstractSolution):
         downtime = self.downtime()
         if not downtime:
             return 0
-        minutes, _ = divmod(downtime.seconds, 60)
+        minutes = downtime.seconds // 60
         return minutes
 
     def duration(self):
