@@ -18,6 +18,7 @@ from ..integration.gitlab import (  # Ignore PyImportSortBear
     get_gitlab_user_email,
     get_issue,
     get_issues_after_due_date,
+    parse_action_list,
 )
 from ..integration.google import get_directory_api
 from ..integration.models import GoogleGroup
@@ -822,11 +823,21 @@ def generate_after_due_date_issues_report():
     else:
         reaction = f"Number of postmortems past their due date is {num_of_issues}"
     comment = f"New postmortem report is ready. {reaction}"
-    fieldnames = ("row", "title", "url", "due date", "author", "assignees")
+    fieldnames = (
+        "row",
+        "title",
+        "url",
+        "due date",
+        "author",
+        "assignees",
+        "Remaining action items",
+        "Remaining open issues",
+    )
     with tempfile.TemporaryFile("r+") as fw:
         csv_fw = csv.DictWriter(fw, fieldnames=fieldnames)
         csv_fw.writeheader()
         for row, issue in enumerate(issues, 1):
+            action_items, open_issues = parse_action_list(issue)
             csv_fw.writerow(
                 {
                     fieldnames[0]: row,
@@ -835,6 +846,8 @@ def generate_after_due_date_issues_report():
                     fieldnames[3]: issue.due_date,
                     fieldnames[4]: issue.author["username"],
                     fieldnames[5]: ";".join([a["username"] for a in issue.assignees]),
+                    fieldnames[6]: action_items or "",
+                    fieldnames[7]: open_issues or "",
                 }
             )
         fw.seek(0)
