@@ -136,3 +136,54 @@ def get_gitlab_user_email(uid):
         logger.error(f"Unable to list emails for Gitlab user: {e}")
         emails = []
     return emails
+
+
+# Match "Action Items" section
+RE_ACTION_ITEMS = re.compile(r"(?<=# Action Items)(.*)(?=# Lessons Learned)", re.S)
+# Match "Action Item" by matching every line that starts with '- [ ]'
+RE_ACTION_ITEM = re.compile(r"(?=- \[ \])(.*)")
+# Match URL in "Action Item"
+RE_ACTION_ITEM_URL = re.compile(r"(https?:\/\/(www\.)?([\w.]+)([\w./\-&?=#]+))")
+
+
+def parse_urls_in_action_point(action_point):
+    """ Parse all URLs in action point and return links to issues."""
+    # Used to match only URLs that point to issues
+    mapping = {
+        "gitlab.skypicker.com": re.compile(r"issues/\d+"),
+        "github.com": re.compile(r"issues/\d+"),
+        "jira.kiwi.com": re.compile(r"browse/\w+-\d+"),
+    }
+    urls = []
+    match = RE_ACTION_ITEM_URL.findall(action_point)
+    for url, _, host, path in match:
+        # Make sure URL points to issue
+        re_func = mapping.get(host)
+        if re_func:
+            match = re_func.search(path)
+            if match:
+                urls.append(url)
+    return "\n".join(urls)
+
+
+def parse_action_list(issue):
+    """ Parse issue.description and return all unresolved Action Items."""
+    description = issue.description
+    # Match the section with all items
+    match = RE_ACTION_ITEMS.search(description)
+    if not match:
+        logger.warning(f'No "Action Items" found for issue {issue.id}, skipping...')
+        return "", ""
+    action_list = match.group(0).split("\n")
+    action_points = []
+    urls = []
+    for item in action_list:
+        # Check every line wether it's the Action Item
+        match = RE_ACTION_ITEM.match(item)
+        if match:
+            action_point = match.group(0)
+            if action_point:
+                action_points.append(action_point.strip("- "))
+                if "http" in action_point:
+                    urls.append(parse_urls_in_action_point(action_point))
+    return "\n".join(action_points), "\n".join(urls)
