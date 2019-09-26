@@ -221,11 +221,15 @@ class OutageComment(CommentBase):
     def generate_comments(self):
         self.process_more_info()  # Always add more info as first
         fields = [
+            "summary",
             "eta",
             "assignees",
             "sales_affected_choice",
             "lost_bookings_choice",
             "lost_bookings",
+            "started_at",
+            "systems_affected",
+            "root_cause",
         ]
         self.add_comments(fields)
 
@@ -241,6 +245,12 @@ class OutageComment(CommentBase):
 
     def reopened(self):
         return hasattr(self.outage, "solution") and not self.outage.resolved
+
+    def _add_started_at_comment(self):
+        started_at = self.outage.started_at.strftime("%Y-%m-%d %H:%M")
+        comment = f"Start of incident changed to: {started_at} (UTC)."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
 
     def _add_reopened_comment(self):
         comment = "Outage has been reopened"

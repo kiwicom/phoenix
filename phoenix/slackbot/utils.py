@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from rest_framework.response import Response
 
-from ..core.models import System
+from ..core.models import System, RootCause
 from .bot import slack_client
 
 logger = logging.getLogger(__name__)
@@ -60,6 +60,13 @@ def get_system_option(sort_by=None):
     else:
         sorted_systems = systems
     return [{"label": system.name, "value": system.id} for system in sorted_systems]
+
+
+def get_root_cause_option():
+    root_causes = RootCause.objects.all()
+    return [
+        {"label": root_cause.name, "value": root_cause.id} for root_cause in root_causes
+    ]
 
 
 def format_datetime(timestamp):

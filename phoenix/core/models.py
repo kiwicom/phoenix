@@ -40,6 +40,16 @@ class System(models.Model):
         ordering = ["name"]
 
 
+class RootCause(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        ordering = ["name"]
+
+
 class AbstractOutage(models.Model):
     YES = "Y"
     NO = "N"
@@ -68,6 +78,7 @@ class AbstractOutage(models.Model):
     systems_affected = models.ForeignKey(
         System, null=True, related_name="systems_%(class)s", on_delete=models.CASCADE
     )
+    root_cause = models.ForeignKey(RootCause, null=True, on_delete=models.CASCADE)
     communication_assignee = models.ForeignKey(
         USER_MODEL, related_name="comunicate_outages", on_delete=models.CASCADE
     )
@@ -213,6 +224,13 @@ class Outage(AbstractOutage):
             return False
         self.systems_affected = system
 
+    def set_root_cause(self, root_cause_id):
+        try:
+            root_cause = RootCause.objects.get(id=root_cause_id)
+        except RootCause.DoesNotExist:
+            return False
+        self.root_cause = root_cause
+
     def add_notification(self, text, by_user):
         self.notifications.create(text=text, created_by=by_user)
 
@@ -282,6 +300,7 @@ class Outage(AbstractOutage):
             started_at=self.started_at,
             systems_affected=self.systems_affected,
             resolved=self.resolved,
+            root_cause=self.root_cause,
         )
         history.save()
 

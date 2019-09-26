@@ -9,6 +9,8 @@ SLACK_FIELDS = {
     "assigneess": {"title": "Assignees", "short": True},
     "duration": {"title": "Duration", "short": True},
     "resolution": {"title": "Resolution"},
+    "started_at": {"title": "Start of incident", "short": True},
+    "root_cause": {"title": "Root cause", "short": True},
 }
 
 SLACK_ACTIONS = {
@@ -109,6 +111,10 @@ class BaseMessage:
         )
         return f"{solution_assignee} for resolution\n{communication_assignee} for communication"
 
+    def get_formatted_started_at(self):
+        started_at = self.outage.started_at.strftime("%Y-%m-%d %H:%M")
+        return f"{started_at} (UTC)"
+
 
 class SolutionMessage(BaseMessage):
     def __init__(self, outage, announcement):
@@ -205,6 +211,8 @@ class OutageMessage(BaseMessage):
             slack_field(
                 "eta", value=f"\u200a{self.outage.eta}"
             ),  # NOTE: \u200a is used to properly display symbol ">"
+            slack_field("started_at", value=self.get_formatted_started_at()),
+            slack_field("root_cause", value=self.outage.root_cause.name),
         ]
         return attachment
 
