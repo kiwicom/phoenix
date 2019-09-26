@@ -42,6 +42,7 @@ from .tasks import create_channel as create_channel_task
 from .utils import (
     get_slack_channel_name,
     get_system_option,
+    get_root_cause_option,
     provision_slack_user,
     resolved_at_to_utc,
     retrieve_user,
@@ -316,6 +317,7 @@ def announce(request):
     data = request.data
     logger.debug(data)
     trigger_id = data.get("trigger_id")
+    user_tz = dateutil.tz.gettz(request.user.profile.timezone)
 
     summary_template = (
         "WHO: [customers/employees/partners/….]\n"
@@ -379,10 +381,26 @@ def announce(request):
                     "hint": "Select primary affected system.",
                 },
                 {
+                    "label": "Root cause",
+                    "type": "select",
+                    "name": "root_cause",
+                    "options": get_root_cause_option(),
+                    "hint": "Select root cause.",
+                },
+                {
                     "label": "ETA",
                     "name": "eta",
                     "type": "select",
                     "options": ETA_CHOICE_OPT,
+                },
+                {
+                    "type": "text",
+                    "label": "Start of incident",
+                    "name": "started_at",
+                    "value": timezone.localtime(timezone=user_tz).strftime(
+                        "%Y-%m-%d %H:%M"
+                    ),
+                    "hint": "Local time",
                 },
             ],
         },
@@ -440,6 +458,7 @@ class InteractiveMesssageHandler:
         slack_client.api_call("dialog.open", trigger_id=self.trigger_id, dialog=dialog)
 
     def edit(self):
+        started_at = utc_to_user_time(arrow.get(self.outage.started_at), self.user_tz)
         return {
             "callback_id": f"{self.outage.id}_edit",
             "title": f"Update outage {self.outage.id}",
@@ -483,6 +502,29 @@ class InteractiveMesssageHandler:
                     "optional": True,
                     "value": self.outage.lost_bookings,
                     "hint": "Optionally provide details for lost bookings.",
+                },
+                {
+                    "type": "text",
+                    "label": "Start of incident",
+                    "name": "started_at",
+                    "value": started_at.strftime("%Y-%m-%d %H:%M"),
+                    "hint": "Local time",
+                },
+                {
+                    "label": "Primary affected system",
+                    "type": "select",
+                    "name": "affected_system",
+                    "options": get_system_option(),
+                    "value": self.outage.systems_affected.id,
+                    "hint": "Select primary affected system.",
+                },
+                {
+                    "label": "Root cause",
+                    "type": "select",
+                    "name": "root_cause",
+                    "options": get_root_cause_option(),
+                    "value": self.outage.root_cause.id,
+                    "hint": "Select root cause.",
                 },
                 {
                     "label": "Reason for this change?",
@@ -585,7 +627,6 @@ class InteractiveMesssageHandler:
                     "type": "text",
                     "name": "impact_on_turnover",
                     "subtype": "number",
-                    "optional": True,
                     "value": self.outage.impact_on_turnover,
                     "hint": "Specify impact on turnover in EUR, if any (e.g. 1000).",
                 },
@@ -688,7 +729,6 @@ class InteractiveMesssageHandler:
                     "type": "text",
                     "name": "impact_on_turnover",
                     "subtype": "number",
-                    "optional": True,
                     "value": self.outage.impact_on_turnover,
                     "hint": "Specify impact on turnover in EUR, if any (e.g. 1000).",
                 },
@@ -810,6 +850,19 @@ class DialogSubmissionHandler:
 
     def edit(self):
         impact_on_turnover = self.dialog_data.get("impact_on_turnover")
+        user_tz = self.request.user.profile.timezone
+        try:
+            # TODO: fix midnight
+            started_at = arrow.get(
+                self.dialog_data.get("started_at"), "YYYY-MM-DD HH:mm"
+            )
+            started_at = resolved_at_to_utc(started_at, user_tz)
+            if started_at > arrow.now():
+                self.errors.append(
+                    {"name": "started_at", "error": "Outage can't start in the future."}
+                )
+        except (ValueError, arrow.parser.ParserError):
+            self.errors.append({"name": "started_at", "error": "Invalid format."})
         if impact_on_turnover:
             try:
                 int(impact_on_turnover)
@@ -831,6 +884,13 @@ class DialogSubmissionHandler:
         outage.lost_bookings = self.dialog_data.get("lost_bookings")
         outage.lost_bookings_choice = self.dialog_data.get("lost_bookings_choice")
         outage.impact_on_turnover = impact_on_turnover
+        outage.started_at = started_at
+        summary = self.dialog_data.get("summary")
+        if summary:
+            outage.summary = summary
+        affected_system = self.dialog_data.get("affected_system")
+        outage.set_system_affected(affected_system)
+        outage.set_root_cause(self.dialog_data.get("root_cause"))
         outage.save(change_desc=change_desc, modified_by=self.actor)
 
     def editassignees(self):
@@ -843,6 +903,19 @@ class DialogSubmissionHandler:
 
     def new(self):
         impact_on_turnover = self.dialog_data.get("impact_on_turnover")
+        user_tz = self.request.user.profile.timezone
+        try:
+            # TODO: fix midnight
+            started_at = arrow.get(
+                self.dialog_data.get("started_at"), "YYYY-MM-DD HH:mm"
+            )
+            started_at = resolved_at_to_utc(started_at, user_tz)
+            if started_at > arrow.now():
+                self.errors.append(
+                    {"name": "started_at", "error": "Outage can't start in the future."}
+                )
+        except (ValueError, arrow.parser.ParserError):
+            self.errors.append({"name": "started_at", "error": "Invalid format."})
         if impact_on_turnover:
             try:
                 int(impact_on_turnover)
@@ -863,6 +936,7 @@ class DialogSubmissionHandler:
             lost_bookings=self.dialog_data.get("lost_bookings"),
             lost_bookings_choice=self.dialog_data.get("lost_bookings_choice"),
             impact_on_turnover=impact_on_turnover,
+            started_at=started_at,
             announce_on_statuspage=bool(
                 int(self.dialog_data.get("announce_on_statuspage"))
             ),
@@ -870,6 +944,7 @@ class DialogSubmissionHandler:
         outage.set_eta(self.dialog_data.get("eta"))
         affected_system = self.dialog_data.get("affected_system")
         outage.set_system_affected(affected_system)
+        outage.set_root_cause(self.dialog_data.get("root_cause"))
         outage.save()
         if outage.announce_on_statuspage:
             create_status_page_incident.delay(outage.id)

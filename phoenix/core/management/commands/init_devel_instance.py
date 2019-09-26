@@ -10,7 +10,7 @@ from ....slackbot.management.commands.sync_user_groups import (  # Ignore PyImpo
     Command as SyncUserGroupsCommand,
 )
 from ....slackbot.management.commands.sync_users import Command as SyncUsersCommand
-from ...models import System
+from ...models import System, RootCause
 from .init_instance import Command as InitInstanceCommand
 
 logger = logging.getLogger(__name__)
@@ -58,3 +58,5 @@ class Command(BaseCommand):
         on_call_group = Group.objects.get(name="on_call")
         for user in User.objects.all():
             user.groups.add(on_call_group)
+
+        RootCause(name="test").save()
