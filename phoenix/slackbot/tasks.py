@@ -10,6 +10,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db import DatabaseError, IntegrityError, transaction
+from django.urls import reverse
 
 from ..core.models import Monitor, Outage, Profile, Solution
 from ..integration.datadog import get_all_slack_channels, sync_monitor_details
@@ -38,6 +39,7 @@ from .utils import (
     join_channels,
     retrieve_user,
     transfrom_slack_email_domain,
+    get_absolute_url,
 )
 
 logger = logging.getLogger(__name__)
@@ -1028,11 +1030,14 @@ def notify_communication_assignee():
                     f"Unable to retrieve communication assignee slack id for "
                     "user: {communication_assignee.id}"
                 )
+            outage_rel_link = reverse("outage_detail", kwargs={"pk": outage.pk})
+            outage_abs_link = get_absolute_url(outage_rel_link)
             notified = notify_user_with_im(
                 user_slack_id,
                 message=f"Please provide an update on this outage: {outage.announcement.permalink}\n"
                 f"As communication assignee, we will ask you every "
-                f"{settings.NOTIFY_COMMUNICATION_ASSIGNEE_MINUTES} minutes to provide an update.",
+                f"{settings.NOTIFY_COMMUNICATION_ASSIGNEE_MINUTES} minutes to provide an update.\n\n"
+                f"Web URL: {outage_abs_link}",
             )
             if notified:
                 outage.communication_assignee_notified()
