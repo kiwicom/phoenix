@@ -80,6 +80,7 @@ class AbstractOutage(models.Model):
     )
     started_at = models.DateTimeField(default=timezone.now)
     announce_on_slack = models.BooleanField(default=True)
+    announce_on_statuspage = models.BooleanField(default=False)
 
     sales_affected_choice = models.CharField(
         choices=SALES_AFFECTED_CHOICES, max_length=2, default=UNKNOWN
@@ -280,6 +281,7 @@ class Outage(AbstractOutage):
             change_desc=change_desc,
             modified_by=modified_by,
             started_at=self.started_at,
+            announce_on_statuspage=self.announce_on_statuspage,
             systems_affected=self.systems_affected,
             resolved=self.resolved,
         )
