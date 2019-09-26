@@ -32,8 +32,14 @@ from ..core.utils import (
 from ..integration.gitlab import get_postmortem_title
 from .bot import slack_bot_client, slack_client
 from .models import Announcement
+from .tasks import (
+    create_status_page_incident,
+    post_warning_to_user,
+    resolve_status_page_incident,
+    share_message_to_announcement,
+    test_task,
+)
 from .tasks import create_channel as create_channel_task
-from .tasks import post_warning_to_user, share_message_to_announcement, test_task
 from .utils import (
     get_slack_channel_name,
     get_system_option,
@@ -61,7 +67,7 @@ SALES_AFFECTED_CHOICE_OPT = [
 SALES_AFFECTED_CHOICE_OPT_SOLUTION = [
     option for option in SALES_AFFECTED_CHOICE_OPT if option["value"] != Outage.UNKNOWN
 ]
-CHECKBOX_OPT = [{"value": 1, "label": "Yes"}, {"value": 0, "label": "No"}]
+YES_OR_NO_OPTIONS = [{"value": 1, "label": "Yes"}, {"value": 0, "label": "No"}]
 ETA_CHOICE_OPT = [
     {"value": option[0], "label": option[1]} for option in Outage.ETA_CHOICES
 ]
@@ -335,6 +341,14 @@ def announce(request):
                     "value": summary_template,
                 },
                 {
+                    "label": "Should this be public externally?",
+                    "name": "announce_on_statuspage",
+                    "type": "select",
+                    "options": YES_OR_NO_OPTIONS,
+                    "value": "0",
+                    "hint": '"Yes" will post this to status.kiwi.com to inform our partners',
+                },
+                {
                     "label": "Sales affected",
                     "type": "select",
                     "options": SALES_AFFECTED_CHOICE_OPT,
@@ -505,6 +519,7 @@ class InteractiveMesssageHandler:
     def resolve(self):
         pn = PostmortemNotifications()
         pn.save()
+
         # Mark outage as resolved
         self.outage.resolved = True
         self.outage.save()
@@ -517,6 +532,10 @@ class InteractiveMesssageHandler:
             )
         else:
             self.outage.solution.save(modified_by=self.actor)
+
+        if hasattr(self.outage, "status_page_incident"):
+            resolve_status_page_incident.delay(self.outage.id)
+
         if not self.outage.sales_affected_choice == Outage.UNKNOWN:
             sales_affected = self.outage.sales_affected_choice
         else:
@@ -843,11 +862,16 @@ class DialogSubmissionHandler:
             lost_bookings=self.dialog_data.get("lost_bookings"),
             lost_bookings_choice=self.dialog_data.get("lost_bookings_choice"),
             impact_on_turnover=impact_on_turnover,
+            announce_on_statuspage=bool(
+                int(self.dialog_data.get("announce_on_statuspage"))
+            ),
         )
         outage.set_eta(self.dialog_data.get("eta"))
         affected_system = self.dialog_data.get("affected_system")
         outage.set_system_affected(affected_system)
         outage.save()
+        if outage.announce_on_statuspage:
+            create_status_page_incident.delay(outage.id)
 
     def resolve(self):
         outage = Outage.objects.get(id=self.obj)

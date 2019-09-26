@@ -20,8 +20,14 @@ from ..integration.gitlab import (  # Ignore PyImportSortBear
     get_issues_after_due_date,
 )
 from ..integration.google import get_directory_api
-from ..integration.models import GoogleGroup
+from ..integration.models import GoogleGroup, StatusPageIncident
 from ..integration.smtp import send_email
+from ..integration.status_page import (
+    create_incident,
+    resolve_incident,
+    update_incident_url,
+    run_if_enabled as status_page_run_if_enabled,
+)
 from ..outages.utils import format_datetime as format_outage_datetime
 from .bot import slack_bot_client, slack_client
 from .message import generate_slack_message
@@ -934,6 +940,48 @@ def postmortem_notifications():
         else:
             if solution.created < label_limit:
                 postmortem_label_notify(solution)
+
+
+@shared_task
+@status_page_run_if_enabled
+def create_status_page_incident(outage_id):
+    outage = Outage.objects.get(id=outage_id)
+    systems_affected = outage.systems_affected
+    components = systems_affected.status_page_components.all()
+    if components:
+        logger.info(f"Creating incident for outage {outage_id}")
+        new_incident = create_incident(components, outage.eta)
+        incident_id = new_incident["id"]
+        if incident_id:
+            edit_url = update_incident_url(incident_id)
+            incident_url = new_incident["shortlink"]
+            incident = StatusPageIncident(
+                status_page_id=incident_id,
+                url=incident_url,
+                edit_url=edit_url,
+                outage=outage,
+            )
+            incident.save()
+            if incident_url and edit_url:
+                comment = (
+                    f"Incident has been created in {incident_url}. You can edit this"
+                    f" incident here: {edit_url}"
+                )
+                add_comment(
+                    outage.announcement.message_ts,
+                    outage.announcement.channel_id,
+                    comment=comment,
+                )
+
+
+@shared_task
+@status_page_run_if_enabled
+def resolve_status_page_incident(outage_id):
+    outage = Outage.objects.get(id=outage_id)
+    systems_affected = outage.systems_affected
+    components = systems_affected.status_page_components.all()
+    incident_id = outage.status_page_incident.status_page_id
+    resolve_incident(incident_id, components)
 
 
 def communication_assignee_should_be_notified(outage):

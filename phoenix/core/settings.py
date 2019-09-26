@@ -262,6 +262,12 @@ ALLOW_ALL_TO_NOTIFY = distutils.util.strtobool(
     os.getenv("ALLOW_ALL_TO_NOTIFY", "False")
 )
 
+# STATUS PAGE
+STATUS_PAGE_API_KEY = os.getenv("STATUS_PAGE_API_KEY")
+STATUS_PAGE_ID = os.getenv("STATUS_PAGE_ID")
+STATUS_PAGE_API_URL = os.getenv("STATUS_PAGE_API_URL")
+STATUS_PAGE_UPDATE_INCIDENT_URL = os.getenv("STATUS_PAGE_UPDATE_INCIDENT_URL")
+
 # If outage isn't resolved ping communication assignee every X minutes.
 NOTIFY_COMMUNICATION_ASSIGNEE_MINUTES = int(
     os.getenv("NOTIFY_COMMUNICATION_ASSIGNEE_MINUTES", "30")

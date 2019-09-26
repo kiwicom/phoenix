@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from ..integration.models import GoogleGroup
+from ..integration.models import GoogleGroup, StatusPageComponent
 from .models import Alert, Monitor, Outage, OutageHistory, Solution, System
 
 admin.site.register(Outage)
@@ -10,3 +10,4 @@ admin.site.register(System)
 admin.site.register(Alert)
 admin.site.register(Monitor)
 admin.site.register(GoogleGroup)
+admin.site.register(StatusPageComponent)

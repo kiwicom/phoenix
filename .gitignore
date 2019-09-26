@@ -249,3 +249,4 @@ node_modules
 terraform.tfstate.backup
 terraform.tfstate*
 .tf-generated
+.mypy_cache
