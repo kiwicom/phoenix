@@ -32,7 +32,7 @@ def postmortem_project():
 def get_open_postmortems():
     project = postmortem_project()
     return project.issues.list(
-        all=True, state="opened", **{'not': {'labels': 'non-outage'}}
+        all=True, state="opened", **{"not": {"labels": "non-outage"}}
     )
 
 
