@@ -19,14 +19,6 @@ def get_api():
     return None
 
 
-def get_open_issues():
-    """List issues with specified days before due date."""
-    api = get_api()
-    if not api:
-        return None
-    return api.issues.list(all=True, state="opened")
-
-
 def postmortem_project():
     api = get_api()
     if not api:
@@ -39,7 +31,9 @@ def postmortem_project():
 
 def get_open_postmortems():
     project = postmortem_project()
-    return project.issues.list(all=True, state="opened")
+    return project.issues.list(
+        all=True, state="opened", **{'not': {'labels': 'non-outage'}}
+    )
 
 
 def parse_report_url(report_url):
