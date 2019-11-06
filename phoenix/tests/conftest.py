@@ -9,6 +9,11 @@ import testing.postgresql
 
 @pytest.fixture(scope="session")
 def db_url():
+    db_uri_var = "TEST_DATABASE_URL"
+
+    if os.getenv(db_uri_var):
+        os.environ[db_uri_var] = os.path.expandvars(os.environ[db_uri_var])
+
     try:
         yield os.environ["TEST_DATABASE_URL"]
 
@@ -38,3 +43,12 @@ def django_modify_slack_settings():
     settings.SLACK_VERIFICATION_TOKEN = "unittest-token"
     settings.DATADOG_API_KEY = "unittest"
     settings.DATADOG_APP_KEY = "unittest"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def django_modify_redis_settings():
+    redis_uri_var = "REDIS_URL"
+
+    if os.getenv(redis_uri_var):
+        settings.REDIS_URL = os.path.expandvars(os.environ[redis_uri_var])
+        settings.CELERY_BROKER_URL = settings.REDIS_URL
