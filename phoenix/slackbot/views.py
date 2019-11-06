@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connections
 from django.db.utils import OperationalError
+from django.http import JsonResponse
 from django.utils import timezone
 import kombu
 from rest_framework import status
@@ -79,12 +80,10 @@ def get_handler(event_type):
     return None
 
 
-@api_view(["GET"])
 def handle_status(request):
-    return Response(status=status.HTTP_200_OK)
+    return JsonResponse({"status": "ok"}, status=200)
 
 
-@api_view(["GET"])
 def handle_up(request):
     """Check status of required services."""
     db_conn = connections["default"]
@@ -92,21 +91,21 @@ def handle_up(request):
         db_conn.cursor()
     except OperationalError:
         logger.error("Database connection check failed")
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({"status": "error"}, status=500)
 
     data = slack_client.api_call("api.test")
     bot_data = slack_bot_client.api_call("api.test")
     if not data["ok"] or not bot_data["ok"]:
         logger.error("Slack API connection check failed")
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({"status": "error"}, status=500)
 
     try:
         test_task.delay()
     except kombu.exceptions.OperationalError:
         logger.error("Celery tasks check failed")
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({"status": "error"}, status=500)
 
-    return Response(status=status.HTTP_200_OK)
+    return JsonResponse({"status": "ok"}, status=200)
 
 
 @api_view(["POST"])
