@@ -148,10 +148,10 @@ REST_FRAMEWORK = {
     )
 }
 
-
 # Logging config
-configure_structlog(debug=DEBUG)
-configure_stdlib_logging(debug=DEBUG)
+timestamp_format = os.getenv("STRUCTLOG_TIMESTAMP_FORMAT")
+configure_structlog(debug=DEBUG, timestamp_format=timestamp_format)
+configure_stdlib_logging(debug=DEBUG, timestamp_format=timestamp_format)
 
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis/0")

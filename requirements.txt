@@ -45,7 +45,7 @@ imagesize==1.1.0          # via sphinx
 importlib-metadata==0.9   # via pre-commit
 incremental==17.5.0       # via twisted
 jinja2==2.10.1            # via sphinx
-kiwi-structlog-config==0.1.3.post1
+kiwi-structlog-config==0.1.6
 kombu==4.5.0              # via celery
 markupsafe==1.1.1         # via jinja2
 more-itertools==7.0.0     # via pytest
