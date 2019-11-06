@@ -243,6 +243,7 @@ node_modules
 .terraform/
 .env
 .envrc
+.direnv
 .env-*
 .idea/
 terraform.tfstate.backup
