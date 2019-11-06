@@ -20,7 +20,6 @@ services:
 before_script:
   - export CI_BUILD_REF_SLUG=${CI_BUILD_REF_NAME/\//-}
   - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY || true
-  - echo $GCLOUD_SERVICE_KEY | docker login -u _json_key --password-stdin gcr.io/$GCLOUD_PROJECT_ID || true
 
 include:
   - 'https://ci-files.skypicker.com/templates/build/black.yml'
@@ -42,12 +41,8 @@ docker_build:
       $IMAGE_LABELS
       --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
       --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-      --tag gcr.io/platform-oss-68e184b6/kiwicom/phoenix:$CI_COMMIT_SHA
-      --tag gcr.io/platform-oss-68e184b6/kiwicom/phoenix:$CI_COMMIT_REF_SLUG
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    - docker push gcr.io/platform-oss-68e184b6/kiwicom/phoenix:$CI_COMMIT_SHA
-    - docker push gcr.io/platform-oss-68e184b6/kiwicom/phoenix:$CI_COMMIT_REF_SLUG
 
 pytest:
   stage: test
