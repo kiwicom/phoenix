@@ -58,6 +58,7 @@ class AbstractOutage(models.Model):
     )
     LOST_BOOKINGS_CHOICES = (
         ("0%", "0%"),
+        ("<10%", "<10%"),
         ("<30%", "<30%"),
         ("<60%", "<60%"),
         ("<100%", "<100%"),
