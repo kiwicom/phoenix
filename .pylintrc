@@ -26,7 +26,9 @@ disable =
   too-many-locals,
   logging-fstring-interpolation,
   too-many-instance-attributes,
-  too-many-lines
+  too-many-lines,
+  logging-format-interpolation,
+  import-outside-toplevel
 
 [REPORTS]
 output-format=colorized
