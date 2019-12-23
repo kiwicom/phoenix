@@ -115,7 +115,7 @@ Phoenix has small feature for agregating notification data from monitoring. Curr
 #### Monitoring (optional)
 - Phoenix supports implementations with Datadog and Sentry. You just need to generate the keys and pass them to Phoenix.
 - For `datadog` generate Datadog API and APP keys.
-- For `sentry` get Sentry DSN. 
+- For `sentry` get Sentry DSN.
 
 
 ## Configuration
@@ -127,10 +127,11 @@ Phoenix is able to retrieve configuration/secrets from environment variables. Th
 - `SLACK_TOKEN` — Slack application OAuth Access Token
 - `SLACK_ANNOUNCE_CHANNEL_ID` — Slack channel ID where Phoenix should announce outages
 - `SLACK_BOT_ID` — Bot ID
-- `SLACK_BOT_TOKEN` — Bot User OAuth Access Token 
+- `SLACK_BOT_TOKEN` — Bot User OAuth Access Token
 - `SLACK_VERIFICATION_TOKEN` — used to verify whether Phoenix API endpoints are called by Slack
 - `SLACK_EMOJI` — emoji name, e.g. `point_up`, If you add a reaction with this emoji to a comment in an outage-dedicated channel, it will be shared in the thread under the main outage announcement. Default: `point_up`
 - `SLACK_NOTIFY_SALES_CHANNEL_ID` — sets `channel ID` for notification about announcement of outage which affects sales. (optional)
+- `SLACK_NOTIFY_B2B_CHANNEL_ID` — sets `channel ID` for notification about announcement of outage which affects B2B partners. (optional)
 - `SECRET_KEY` — secret key for Django application
 - `DEBUG` - switches to debug mode. Default: False
 - `DATADOG_API_KEY` — [see Monitoring](#monitoring-optional)
@@ -140,7 +141,7 @@ Phoenix is able to retrieve configuration/secrets from environment variables. Th
 - `GOOGLE_SERVICE_ACCOUNT` — Google API service account data (json format) [see Google API](#google-api-optional)
 - `GOOGLE_ACC` — specifies which Google account will be used by the Google API
 - `GITLAB_URL` — defines the Gitlab API url. Default `https://gitlab.skypicker.com`. If you don't specify a value, the Postmortem notifications feature will be turned off
-- `GITLAB_PRIVATE_TOKEN` — Gitlab API access token [see Gitlab API](#gitlab-api-optional). If you don't specify the value, Postmortem notifications feature will be turned off. 
+- `GITLAB_PRIVATE_TOKEN` — Gitlab API access token [see Gitlab API](#gitlab-api-optional). If you don't specify the value, Postmortem notifications feature will be turned off.
 - `GITLAB_POSTMORTEM_DAYS_TO_NOTIFY` — used for setting the list of days to notify postmortem assignees before the issue due date. Default `3,7` (3 and 7 days before ETA)
 - `REDIS_URL` — specifies a Redis URL (in GCP k8s, this is the IP address of the Redis service). Default: `redis`
 - `REDIS_PORT` — specifies a Redis port. Default: `6379`
@@ -160,7 +161,7 @@ PYPI_USERNAME=<your username for pypi.skypicker.com>
 PYPI_PASSWD=<password>
 
 
-# specify these following variables if you don't want to use vault 
+# specify these following variables if you don't want to use vault
 DATABASE_URL=postgres://postgres:postgres@postgres/postgres
 SLACK_TOKEN=<TOKEN>
 SLACK_ANNOUNCE_CHANNEL_ID=<channel id>
