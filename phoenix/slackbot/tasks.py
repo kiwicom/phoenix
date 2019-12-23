@@ -482,6 +482,7 @@ def create_or_update_announcement(outage_pk, check_history=False):
                 )
                 announcement.save()
             notify_sales_about_creation(announcement)
+            notify_b2b_about_creation(announcement)
 
         if create_new:
             notify_assigned(outage.solution_assignee.last_name, announcement.permalink)
