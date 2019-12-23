@@ -9,6 +9,7 @@
                     <th class="mdl-data-table__cell--non-numeric">Description</th>
                     <th class="mdl-data-table__cell--non-numeric">System affected</th>
                     <th class="mdl-data-table__cell--non-numeric">Sales affected</th>
+                    <th class="mdl-data-table__cell--non-numeric">B2B Partners affected</th>
                     <th class="mdl-data-table__cell--non-numeric">Resolved</th>
                     <th class="mdl-data-table__cell--non-numeric">Edit</th>
                     <th class="mdl-data-table__cell--non-numeric">Resolve</th>
@@ -30,6 +31,11 @@
                         <td class="mdl-data-table__cell--non-numeric">
                             <span class="mdl-chip">
                                 <span class="mdl-chip__text">{{ outage.sales_affected_choice_human }}</span>
+                            </span>
+                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">
+                            <span class="mdl-chip">
+                                <span class="mdl-chip__text">{{ outage.b2b_partners_affected_choice_human }}</span>
                             </span>
                         </td>
                         <td class="mdl-data-table__cell--non-numeric">

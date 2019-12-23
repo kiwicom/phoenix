@@ -17,6 +17,7 @@ class Announcement(models.Model):
     permalink = models.CharField(null=True, blank=True, max_length=200)
     date = models.DateTimeField(auto_now_add=True)
     sales_notified = models.BooleanField(default=False, null=True, blank=True)
+    b2b_notified = models.BooleanField(default=False, null=True, blank=True)
 
     def __init__(self, *args, **kwargs):
         super(Announcement, self).__init__(*args, **kwargs)

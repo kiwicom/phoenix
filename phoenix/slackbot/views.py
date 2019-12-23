@@ -343,6 +343,14 @@ def announce(request):
                                                   in Suggested outcome.""",
                 },
                 {
+                    "label": "B2B Partners affected",
+                    "type": "select",
+                    "options": SALES_AFFECTED_CHOICE_OPT,
+                    "name": "b2b_partners_affected_choice",
+                    "hint": """If b2b partners have been affected choose Postmortem report
+                                                  in Suggested outcome.""",
+                },
+                {
                     "label": "Lost bookings",
                     "type": "select",
                     "name": "lost_bookings_choice",
@@ -454,6 +462,14 @@ class InteractiveMesssageHandler:
                     "hint": "If sales have been affected choose Postmortem report in Suggested outcome.",
                 },
                 {
+                    "label": "B2B Partners affected",
+                    "type": "select",
+                    "options": SALES_AFFECTED_CHOICE_OPT,
+                    "name": "b2b_partners_affected_choice",
+                    "value": self.outage.b2b_partners_affected_choice,
+                    "hint": "If b2b partners have been affected choose Postmortem report in Suggested outcome.",
+                },
+                {
                     "label": "Lost bookings",
                     "type": "select",
                     "name": "lost_bookings_choice",
@@ -517,10 +533,16 @@ class InteractiveMesssageHandler:
             )
         else:
             self.outage.solution.save(modified_by=self.actor)
+
         if not self.outage.sales_affected_choice == Outage.UNKNOWN:
             sales_affected = self.outage.sales_affected_choice
         else:
             sales_affected = ""
+
+        if not self.outage.b2b_partners_affected_choice == Outage.UNKNOWN:
+            b2b_partners_affected = self.outage.b2b_partners_affected_choice
+        else:
+            b2b_partners_affected = ""
 
         return {
             "callback_id": f"{self.outage.id}_resolve",
@@ -543,6 +565,14 @@ class InteractiveMesssageHandler:
                     "name": "sales_affected_choice",
                     "value": sales_affected,
                     "hint": "If sales have been affected choose Postmortem report in Suggested outcome.",
+                },
+                {
+                    "label": "B2B Partners affected",
+                    "type": "select",
+                    "options": SALES_AFFECTED_CHOICE_OPT_SOLUTION,
+                    "name": "b2b_partners_affected_choice",
+                    "value": b2b_partners_affected,
+                    "hint": "If b2b_partners have been affected choose Postmortem report in Suggested outcome.",
                 },
                 {
                     "label": "Lost bookings",
@@ -645,6 +675,14 @@ class InteractiveMesssageHandler:
                     "name": "sales_affected_choice",
                     "value": self.outage.sales_affected_choice,
                     "hint": "If sales have been affected choose Postmortem report in Suggested outcome.",
+                },
+                {
+                    "label": "B2B Partners affected",
+                    "type": "select",
+                    "options": SALES_AFFECTED_CHOICE_OPT_SOLUTION,
+                    "name": "b2b_partners_affected_choice",
+                    "value": self.outage.b2b_partners_affected_choice,
+                    "hint": "If b2b partners have been affected choose Postmortem report in Suggested outcome.",
                 },
                 {
                     "label": "Lost bookings",
@@ -806,6 +844,9 @@ class DialogSubmissionHandler:
         outage.set_eta(self.dialog_data.get("eta"))
         change_desc = self.dialog_data.get("more_info", 0)
         outage.sales_affected_choice = self.dialog_data.get("sales_affected_choice")
+        outage.b2b_partners_affected_choice = self.dialog_data.get(
+            "b2b_partners_affected_choice"
+        )
         outage.lost_bookings = self.dialog_data.get("lost_bookings")
         outage.lost_bookings_choice = self.dialog_data.get("lost_bookings_choice")
         outage.impact_on_turnover = impact_on_turnover
@@ -838,6 +879,9 @@ class DialogSubmissionHandler:
             summary=self.dialog_data.get("summary"),
             created_by=self.request.user,
             sales_affected_choice=self.dialog_data.get("sales_affected_choice"),
+            b2b_partners_affected_choice=self.dialog_data.get(
+                "b2b_partners_affected_choice"
+            ),
             lost_bookings=self.dialog_data.get("lost_bookings"),
             lost_bookings_choice=self.dialog_data.get("lost_bookings_choice"),
             impact_on_turnover=impact_on_turnover,
@@ -876,6 +920,9 @@ class DialogSubmissionHandler:
         solution.summary = self.dialog_data.get("summary")
         solution.suggested_outcome = self.dialog_data.get("outcome")
         outage.sales_affected_choice = self.dialog_data.get("sales_affected_choice")
+        outage.b2b_partners_affected_choice = self.dialog_data.get(
+            "b2b_partners_affected_choice"
+        )
         outage.lost_bookings = self.dialog_data.get("lost_bookings")
         outage.lost_bookings_choice = self.dialog_data.get("lost_bookings_choice")
         outage.impact_on_turnover = impact_on_turnover
@@ -914,6 +961,9 @@ class DialogSubmissionHandler:
             elif not title and solution.report_title:
                 solution.report_title = ""
         outage.sales_affected_choice = self.dialog_data.get("sales_affected_choice")
+        outage.b2b_partners_affected_choice = self.dialog_data.get(
+            "b2b_partners_affected_choice"
+        )
         outage.lost_bookings = self.dialog_data.get("lost_bookings")
         outage.lost_bookings_choice = self.dialog_data.get("lost_bookings_choice")
         outage.impact_on_turnover = impact_on_turnover

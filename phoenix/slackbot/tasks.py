@@ -225,6 +225,7 @@ class OutageComment(CommentBase):
             "eta",
             "assignees",
             "sales_affected_choice",
+            "b2b_partners_affected_choice",
             "lost_bookings_choice",
             "lost_bookings",
         ]
@@ -312,6 +313,12 @@ class OutageComment(CommentBase):
         self.slack_comments.append(comment)
         self.html_comments.append(comment)
 
+    def _add_b2b_partners_affected_choice_comment(self):
+        value = self.current_version.b2b_partners_affected_choice_human
+        comment = f"B2B Partners affected changed to: {value}."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
+
     def _add_sales_affected_comment(self):
         value = self.current_version.sales_affected
         comment = f"Sales affected details changed to: {value}."
@@ -331,6 +338,7 @@ class SolutionComment(CommentBase):
         fields = [
             "summary",
             "sales_affected_choice",
+            "b2b_partners_affected_choice",
             "sales_affected",
             "suggested_outcome",
             "report_url",
@@ -398,9 +406,23 @@ class SolutionComment(CommentBase):
         current, previous = outage_history
         return current.sales_affected_choice != previous.sales_affected_choice
 
+    def _b2b_partners_affected_choice_changed(self):
+        outage_history = self.current_version.solution.outage.history_outage.all()[:2]
+        current, previous = outage_history
+        return (
+            current.b2b_partners_affected_choice
+            != previous.b2b_partners_affected_choice
+        )
+
     def _add_sales_affected_choice_comment(self):
         value = self.current_version.solution.outage.sales_affected_choice_human
         comment = f"Sales affected changed to: {value}."
+        self.slack_comments.append(comment)
+        self.html_comments.append(comment)
+
+    def _add_b2b_partners_affected_choice_comment(self):
+        value = self.current_version.solution.outage.b2b_partners_affected_choice_human
+        comment = f"B2B Partners affected changed to: {value}."
         self.slack_comments.append(comment)
         self.html_comments.append(comment)
 
@@ -781,6 +803,31 @@ def notify_sales_about_creation(announcement):
         logger.error(f"Outage creation notification failed: {data['error']}")
         return
     announcement.sales_notified = True
+    announcement.save()
+
+
+def notify_b2b_about_creation(announcement):
+    if (
+        not all(
+            (
+                announcement.outage.b2b_partner_has_been_affected,
+                settings.SLACK_NOTIFY_B2B_CHANNEL_ID,
+            )
+        )
+        or announcement.b2b_notified
+    ):
+        return
+    announcement_url = announcement.permalink
+    msg = "New outage affecting B2B Partners has been announced"
+    if announcement_url:
+        msg += f": {announcement_url}"
+    data = slack_client.api_call(
+        "chat.postMessage", channel=settings.SLACK_NOTIFY_B2B_CHANNEL_ID, text=msg
+    )
+    if not data["ok"]:
+        logger.error(f"Outage creation notification failed: {data['error']}")
+        return
+    announcement.b2b_notified = True
     announcement.save()
 
 

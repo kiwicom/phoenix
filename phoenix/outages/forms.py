@@ -15,6 +15,7 @@ class OutageBaseForm(ModelForm):
         fields = [
             "summary",
             "sales_affected_choice",
+            "b2b_partners_affected_choice",
             "lost_bookings_choice",
             "lost_bookings",
             "systems_affected",

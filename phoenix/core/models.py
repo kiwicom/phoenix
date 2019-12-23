@@ -85,6 +85,9 @@ class AbstractOutage(models.Model):
     sales_affected_choice = models.CharField(
         choices=SALES_AFFECTED_CHOICES, max_length=2, default=UNKNOWN
     )
+    b2b_partners_affected_choice = models.CharField(
+        choices=SALES_AFFECTED_CHOICES, max_length=2, default=UNKNOWN
+    )
     # Keeping field sales_affected for compatibility reasons. This field will also be filled with data from fields
     # lost_bookings and impact_on_turnover.
     sales_affected = models.TextField(max_length=3000, null=True, blank=True)
@@ -113,6 +116,18 @@ class AbstractOutage(models.Model):
             s[1]
             for s in self.SALES_AFFECTED_CHOICES
             if s[0] == self.sales_affected_choice
+        ][0]
+
+    @property
+    def b2b_partner_has_been_affected(self):
+        return self.b2b_partners_affected_choice == self.YES
+
+    @property
+    def b2b_partner_affected_choice_human(self):
+        return [
+            s[1]
+            for s in self.SALES_AFFECTED_CHOICES
+            if s[0] == self.b2b_partners_affected_choice
         ][0]
 
     @property
@@ -267,6 +282,7 @@ class Outage(AbstractOutage):
         history = OutageHistory.objects.create(
             summary=self.summary,
             sales_affected_choice=self.sales_affected_choice,
+            b2b_partners_affected_choice=self.b2b_partners_affected_choice,
             sales_affected=self.sales_affected,
             lost_bookings=self.lost_bookings,
             lost_bookings_choice=self.lost_bookings_choice,

@@ -12,6 +12,7 @@ def get_outage(with_solution=False):
         communication_assignee=user,
         solution_assignee=user,
         sales_affected_choice="Y",
+        b2b_partners_affected_choice="Y",
         sales_affected="test",
         systems_affected=system,
         resolved=True,

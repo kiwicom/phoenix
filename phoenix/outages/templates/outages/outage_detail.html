@@ -13,7 +13,7 @@
         {% else %}
             <p class="status-resolution status-unresolved">UNRESOLVED</p>
             <p>
-                Time until deadline: 
+                Time until deadline:
                 <span class="status-time status-time-unresolved">
                     {{ object.eta_remaining }} minutes
                 </span>
@@ -37,6 +37,10 @@
         <div class="details-item">
             <label class="details-item-name">Sales affected</label>
             <p class="details-item-value">{{ object.sales_affected_choice_human }}</p>
+        </div>
+        <div class="details-item">
+            <label class="details-item-name">B2B Partners affected</label>
+            <p class="details-item-value">{{ object.b2b_partners_affected_choice_human }}</p>
         </div>
         {% if object.sales_affected %}
             <div class="details-item">
@@ -128,7 +132,7 @@
                     <button class="inner-corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
                         <i class="material-icons">done_outline</i>
                     </button>
-                </a>            
+                </a>
                 <a href="{% url 'outage_update' pk=object.pk %}">
                     <button class="corner-fab mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--fab mdl-button--colored mdl-shadow--4dp">
                         <i class="material-icons">mode_edit</i>
