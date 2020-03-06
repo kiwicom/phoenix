@@ -250,7 +250,7 @@ class OutageComment(CommentBase):
         self.html_comments.append(comment)
 
     def _add_eta_comment(self):
-        comment = f"ETA changed to {self.outage.eta} (UTC)."
+        comment = f"ETA changed to {self.outage.eta}."
         self.slack_comments.append(comment)
         self.html_comments.append(comment)
 
@@ -381,7 +381,7 @@ class SolutionComment(CommentBase):
     def _add_resolved_at_comment(self):
         slack_value = format_datetime(self.current_version.resolved_at.timestamp())
         html_value = format_outage_datetime(self.current_version.resolved_at)
-        comment = "Resolved at changed to: {} (UTC)."
+        comment = "Resolved at changed to: {}."
         self.slack_comments.append(comment.format(slack_value))
         self.html_comments.append(comment.format(html_value))
 
@@ -397,7 +397,7 @@ class SolutionComment(CommentBase):
         html_value = format_outage_datetime(
             self.current_version.solution.outage.started_at
         )
-        comment = "Started at changed to: {} (UTC)."
+        comment = "Started at changed to: {}."
         self.slack_comments.append(comment.format(slack_value))
         self.html_comments.append(comment.format(html_value))
 
