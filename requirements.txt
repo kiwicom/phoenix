@@ -21,7 +21,7 @@ django-allauth==0.41.0    # via -r requirements.in
 django-celerybeat-status==0.0.10  # via -r requirements.in
 django-environ==0.4.5     # via -r requirements.in
 django-stronghold==0.3.2  # via -r requirements.in
-django==3.0.2             # via -r requirements.in, django-allauth, djangorestframework
+django==3.0.3             # via -r requirements.in, django-allauth, djangorestframework
 djangorestframework==3.11.0  # via -r requirements.in
 google-api-python-client==1.7.11  # via -r requirements.in
 google-auth-httplib2==0.0.3  # via google-api-python-client
