@@ -13,7 +13,7 @@ celery==4.4.0             # via -r requirements.in
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
 colorama==0.4.3           # via -r requirements.in, kiwi-structlog-config
-datadog==0.33.0           # via -r requirements.in
+datadog==0.39.0           # via -r requirements.in
 ddtrace==0.32.2           # via -r requirements.in
 decorator==4.4.1          # via datadog
 defusedxml==0.6.0         # via python3-openid
