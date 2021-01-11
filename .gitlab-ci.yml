@@ -26,6 +26,9 @@ include:
   - 'https://ci-files.skypicker.com/templates/test/pylint.yml'
   - 'https://ci-files.skypicker.com/templates/release/release_latest.yml'
 
+black:
+  tags: []
+
 docker_build:
   stage: build
   dependencies: []
