@@ -22,7 +22,6 @@ from ..integration.gitlab import (  # Ignore PyImportSortBear
 )
 from ..integration.google import get_directory_api
 from ..integration.models import GoogleGroup
-from ..integration.smtp import send_email
 from ..outages.utils import format_datetime as format_outage_datetime
 from .bot import slack_bot_client, slack_client
 from .message import generate_slack_message
@@ -832,22 +831,6 @@ def notify_b2b_about_creation(announcement):
     announcement.save()
 
 
-def send_by_email(csv_report, text=None):
-    if not settings.POSTMORTEM_EMAIL_REPORT_RECIPIENTS:
-        logger.warning("Postmortem recepients not specified. Skipping email report...")
-        return
-    message = EmailMessage()
-    message["Subject"] = "Phoenix: daily postmortem report"
-    message["from"] = settings.POSTMORTEM_EMAIL_REPORT_FROM
-    message["to"] = settings.POSTMORTEM_EMAIL_REPORT_RECIPIENTS
-    if text:
-        message.set_content(text)
-    message.add_attachment(
-        csv_report.read(), subtype="csv", filename="postmortem_due_date_report.csv"
-    )
-    send_email(message)
-
-
 def send_to_slack(csv_report, channel, comment=None):
     data = slack_bot_client.api_call(
         "files.upload",
@@ -901,7 +884,6 @@ def generate_after_due_date_issues_report():
         fw.seek(0)
         send_to_slack(fw, settings.SLACK_POSTMORTEM_REPORT_CHANNEL, comment=comment)
         fw.seek(0)
-        send_by_email(fw, text=comment)
 
 
 def postmortem_slack_notify(solution):
@@ -917,23 +899,6 @@ def postmortem_slack_notify(solution):
     solution.postmortem_notifications.save()
 
 
-def postmortem_email_notify(solution):
-    if solution.postmortem_notifications.email_notified:
-        return
-    if not settings.POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR:
-        logger.warning("Postmortem recepients not specified. Skipping email report...")
-        return
-    announcement_url = solution.outage.announcement.permalink
-    message = EmailMessage()
-    message["Subject"] = "Phoenix: missing postmortem report"
-    message["from"] = settings.POSTMORTEM_EMAIL_REPORT_FROM
-    message["to"] = settings.POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR
-    message.set_content(f"Missing postmortem for this outage {announcement_url}")
-    send_email(message)
-    solution.postmortem_notifications.email_notified = True
-    solution.postmortem_notifications.save()
-
-
 def is_postmortem_missing_label(solution):
     project_slug = settings.GITLAB_POSTMORTEM_PROJECT_SLUG
     report_url = solution.report_url.split("/")
@@ -945,28 +910,6 @@ def is_postmortem_missing_label(solution):
     return not settings.POSTMORTEM_LABEL in gl_issue.labels
 
 
-def postmortem_label_notify(solution):
-    if solution.postmortem_notifications.label_notified:
-        return
-    if is_postmortem_missing_label(solution):
-        if not settings.POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR:
-            logger.warning(
-                "Postmortem recepients not specified. Skipping email report..."
-            )
-            return
-        announcement_url = solution.outage.announcement.permalink
-        message = EmailMessage()
-        message["Subject"] = "Phoenix: postmortem report missing label"
-        message["from"] = settings.POSTMORTEM_EMAIL_REPORT_FROM
-        message["to"] = settings.POSTMORTEM_NOTIFICAION_EMAIL_RECIP_ADDR
-        message.set_content(
-            f'Missing label "{settings.POSTMORTEM_LABEL}" in this postmortem report {announcement_url}'
-        )
-        send_email(message)
-        solution.postmortem_notifications.label_notified = True
-        solution.postmortem_notifications.save()
-
-
 @shared_task
 def postmortem_notifications():
     list_limit = (
@@ -974,12 +917,6 @@ def postmortem_notifications():
     )
     slack_limit = (
         arrow.now().shift(hours=-settings.POSTMORTEM_SLACK_NOTIFICATION_LIMIT).datetime
-    )
-    email_limit = (
-        arrow.now().shift(hours=-settings.POSTMORTEM_EMAIL_NOTIFICATION_LIMIT).datetime
-    )
-    label_limit = (
-        arrow.now().shift(hours=-settings.POSTMORTEM_LABEL_NOTIFICATION_LIMIT).datetime
     )
 
     solutions = (
@@ -990,11 +927,6 @@ def postmortem_notifications():
     for solution in solutions:
         if solution.missing_postmortem:
             postmortem_slack_notify(solution)
-            if solution.created < email_limit:
-                postmortem_email_notify(solution)
-        else:
-            if solution.created < label_limit:
-                postmortem_label_notify(solution)
 
 
 def communication_assignee_should_be_notified(outage):
